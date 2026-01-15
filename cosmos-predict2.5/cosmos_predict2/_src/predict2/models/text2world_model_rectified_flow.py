@@ -602,6 +602,248 @@ class Text2WorldModelRectifiedFlow(ImaginaireModel):
 
         return latents
 
+    #####################################################################################################
+    @staticmethod
+    def _build_stochastic_step_map(
+        plan: list[tuple[int, int, int] | dict[str, int]] | None
+    ) -> dict[int, int]:
+        """
+        Normalize a user-provided schedule to a map: denoising_iteration -> num_anneal_steps.
+        
+        Args:
+            plan: List of tuples (start, end, num_anneal_steps) or dicts with 'start', 'end', 'steps' keys.
+                  Example: [(2, 5, 3), {"start": 6, "end": 11, "steps": 1}]
+        
+        Returns:
+            Dictionary mapping step index to number of anneal steps.
+        """
+        step_map: dict[int, int] = {}
+        if not plan:
+            return step_map
+
+        for entry in plan:
+            if isinstance(entry, dict):
+                start = entry.get("start", entry.get("begin"))
+                end = entry.get("end", entry.get("stop"))
+                steps = entry.get("steps", entry.get("anneal", entry.get("num_anneal_steps", 1)))
+                if start is None or end is None:
+                    raise ValueError("stochastic_plan dict entries must contain 'start' and 'end' keys.")
+            else:
+                if len(entry) != 3:
+                    raise ValueError(
+                        "Tuple entries in stochastic_plan must be of the form (start, end, num_anneal_steps)."
+                    )
+                start, end, steps = entry
+
+            start_i = int(start)
+            end_i = int(end)
+            steps_i = int(steps)
+
+            if start_i < 0 or end_i < 0:
+                raise ValueError("stochastic_plan indices must be non-negative.")
+            if end_i < start_i:
+                raise ValueError(f"stochastic_plan end ({end_i}) must be >= start ({start_i}).")
+            if steps_i < 1:
+                continue
+
+            for idx in range(start_i, end_i + 1):
+                step_map[idx] = steps_i
+
+        return step_map
+
+    @torch.no_grad()
+    def generate_samples_from_batch_pnp(
+        self,
+        data_batch: Dict,
+        guidance: float = 1.5,
+        seed: int = 1,
+        state_shape: Tuple | None = None,
+        n_sample: int | None = None,
+        is_negative_prompt: bool = False,
+        num_steps: int = 35,
+        shift: float = 5.0,
+
+        stochastic_plan: list[tuple[int, int, int] | dict[str, int]] | None  = [(3, 8, 2), (9, 15, 1)],
+        ths_uncertainty: float = 0.5,
+        p_norm: int = 1,
+        certain_percentage: float = 0.999,
+        **kwargs,
+    ) -> torch.Tensor:
+        """
+        Generate samples from the batch with PnP (Plug and Play) stochastic sampling.
+        
+        Based on given batch, it will automatically determine whether to generate image or video samples.
+        This method applies stochastic annealing during specified inference steps to improve sample quality.
+        
+        Args:
+            data_batch (dict): raw data batch draw from the training data loader.
+            guidance (float): guidance weights
+            seed (int): random seed
+            state_shape (tuple): shape of the state, default to data batch if not provided
+            n_sample (int): number of samples to generate
+            is_negative_prompt (bool): use negative prompt t5 in uncondition if true
+            num_steps (int): number of steps for the diffusion process
+            shift (float): shift parameter for scheduler
+            stochastic_plan (list): Per-step stochastic schedule. Each entry describes an inclusive 
+                [start, end] range over the denoising iteration index (0-based) and the num_anneal_steps 
+                to apply inside that range. Example: [(2, 5, 3), {"start": 6, "end": 11, "steps": 1}]
+                Default: [(2, 3, 5), (4, 15, 1)]
+            ths_uncertainty (float): threshold for uncertainty to skip PnP iterations
+            p_norm (int): P-norm for uncertainty estimation (we used L1 norm)
+            certain_percentage (float): If certain area percentage is larger than this value, skip PnP iterations
+        """
+        if stochastic_plan is None:
+            stochastic_plan = [(3, 8, 2), (9, 15, 1)]
+        
+        # Build stochastic step map
+        stochastic_step_map = self._build_stochastic_step_map(stochastic_plan)
+        
+        self._normalize_video_databatch_inplace(data_batch)
+        self._augment_image_dim_inplace(data_batch)
+        is_image_batch = self.is_image_batch(data_batch)
+        input_key = self.input_image_key if is_image_batch else self.input_data_key
+        if n_sample is None:
+            n_sample = data_batch[input_key].shape[0]
+        if state_shape is None:
+            _T, _H, _W = data_batch[input_key].shape[-3:]
+            state_shape = [
+                self.config.state_ch,
+                self.tokenizer.get_latent_num_frames(_T),
+                _H // self.tokenizer.spatial_compression_factor,
+                _W // self.tokenizer.spatial_compression_factor,
+            ]
+
+        noise = misc.arch_invariant_rand(
+            (n_sample,) + tuple(state_shape),
+            torch.float32,
+            self.tensor_kwargs["device"],
+            seed,
+        )
+
+        seed_g = torch.Generator(device=self.tensor_kwargs["device"])
+        seed_g.manual_seed(seed)
+
+        self.sample_scheduler.set_timesteps(
+            num_steps,
+            device=self.tensor_kwargs["device"],
+            shift=shift,
+            use_kerras_sigma=self.config.use_kerras_sigma_at_inference,
+        )
+
+        timesteps = self.sample_scheduler.timesteps
+
+        velocity_fn = self.get_velocity_fn_from_batch_pnp(data_batch, guidance, is_negative_prompt=is_negative_prompt)
+        use_spatial_split = False
+        if self.net.is_context_parallel_enabled:
+            cp_size = len(torch.distributed.get_process_group_ranks(self.get_context_parallel_group()))
+            n_views = noise.shape[2] // self.get_num_video_latent_frames()
+            # Perform spatial split only when it's required, i.e. temporal split is not enough.
+            # Refer to "find_split" definition for more details.
+            state_t = noise.shape[2] // n_views
+            use_spatial_split = cp_size > state_t or state_t % cp_size != 0
+            after_split_shape = None
+            if use_spatial_split:
+                after_split_shape = find_split(noise.shape, cp_size, view_factor=n_views)
+                after_split_shape = torch.Size([after_split_shape[0] * n_views, *after_split_shape[1:]])
+                noise = rearrange(noise, "b c t h w -> b c (t h w)")
+            noise = broadcast_split_tensor(tensor=noise, seq_dim=2, process_group=self.get_context_parallel_group())
+            if use_spatial_split:
+                noise = rearrange(noise, "b c (t h w) -> b c t h w", t=after_split_shape[0], h=after_split_shape[1])
+        latents = noise
+
+        if INTERNAL:
+            timesteps_iter = timesteps
+        else:
+            timesteps_iter = tqdm.tqdm(timesteps, desc="Generating samples (PnP)", total=len(timesteps))
+
+        for i, t in enumerate(timesteps_iter):
+            # Get number of anneal steps for this iteration
+            current_num_anneal_steps = stochastic_step_map.get(i, 0)
+            in_stoch = current_num_anneal_steps > 0
+            
+            # m = number of forward passes at this step
+            # If stochastic: 1 (initial) + anneal_steps (re-noised predictions)
+            m = current_num_anneal_steps + 1 if in_stoch else 1
+            
+            # Get current sigma (t in flow matching, where x_t = (1-t)*x_0 + t*noise)
+            # For rectified flow: t represents the noise level
+            scheduler = self.sample_scheduler
+            if scheduler.step_index is None:
+                scheduler._init_step_index(t)
+
+            sigma = scheduler.sigmas[scheduler.step_index]  # Current timestep (noise level)
+            sigma_next = scheduler.sigmas[scheduler.step_index + 1]
+            
+            # Buffer to store pred_original_sample across anneal steps
+            buffer = [None]
+            certain_mask = None
+            certain_flag = False
+            
+            for ii in range(m):
+                if certain_flag:
+                    latents = buffer[-1][2]
+                    break
+
+                if ii == 0:
+                    # First prediction: use current latents
+                    latent_model_input = latents
+                else:
+                    # Subsequent anneal steps: re-noise from pred_original_sample
+                    # x_t = (1 - t) * x_0 + t * noise  (flow matching interpolation)
+                    new_noise = misc.arch_invariant_rand(
+                        latents.shape,
+                        latents.dtype,
+                        self.tensor_kwargs["device"],
+                        seed + i * 1000 + ii,  # Different seed for each anneal step
+                    )
+                    
+                    latents = (1.0 - sigma) * buffer[-1][1] + sigma * new_noise
+                    latent_model_input = latents
+
+                timestep = [t]
+                timestep = torch.stack(timestep)
+                
+                # Get velocity prediction
+                velocity_pred = velocity_fn(noise, latent_model_input, timestep.unsqueeze(0), sigma)
+                
+                pred_original_sample = latents - sigma * velocity_pred
+                latents_next = latents + (sigma_next - sigma) * velocity_pred
+                
+                if in_stoch:
+                    if buffer[-1] is not None: # if buffer is not empty
+                        uncertainty = torch.norm(pred_original_sample - buffer[-1][1], p=p_norm, dim=1) / self.config.state_ch # b, f, h, w
+                        certain_mask = uncertainty < ths_uncertainty # certain region, e.g., background
+                        if buffer[-1][0] is not None:
+                            certain_mask = certain_mask | buffer[-1][0] # update certain mask (union)
+                        # if the certain region is more than this percentage, set certain_flag to True
+                        if certain_mask.sum() / certain_mask.numel() > certain_percentage:
+                            certain_flag = True
+                            log.info(
+                                f"{ii}/{current_num_anneal_steps}: Certain region is more than {certain_percentage}, set certain_flag to True"
+                            )
+                        certain_mask_float = certain_mask.to(latents.dtype)
+                        latents_next = certain_mask_float * buffer[-1][2] + (1.0 - certain_mask_float) * latents_next
+                        pred_original_sample = certain_mask_float * buffer[-1][1] + (1.0 - certain_mask_float) * pred_original_sample
+                    buffer.append([certain_mask, pred_original_sample, latents_next]) 
+
+                    if ii == m - 1: # finish the last step in annealing
+                        latents = buffer[-1][2]
+
+                else: # base ODE step
+                    latents = latents_next
+
+            scheduler._step_index += 1
+
+        if self.net.is_context_parallel_enabled:
+            if use_spatial_split:
+                latents = rearrange(latents, "b c t h w -> b c (t h w)")
+            latents = cat_outputs_cp(latents, seq_dim=2, cp_group=self.get_context_parallel_group())
+            if use_spatial_split:
+                latents = rearrange(latents, "b c (t h w) -> b c t h w", t=state_shape[1], h=state_shape[2])
+
+        return latents
+    #####################################################################################################
+
     @torch.no_grad()
     def generate_samples_from_batch_lora(
         self,

@@ -136,6 +136,74 @@ class Video2WorldModelRectifiedFlow(Text2WorldModelRectifiedFlow):
             )
 
         return net_output_B_C_T_H_W
+    #####################################################################################################
+    def denoise_pnp(
+        self,
+        noise: torch.Tensor,
+        xt_B_C_T_H_W: torch.Tensor,
+        timesteps_B_T: torch.Tensor,
+        sigma: torch.Tensor,
+        condition: Text2WorldCondition,
+    ) -> DenoisePrediction:
+        """
+        Args:
+            xt (torch.Tensor): The input noise data.
+            sigma (torch.Tensor): The noise level.
+            condition (Text2WorldCondition): conditional information, generated from self.conditioner
+
+        Returns:
+            velocity prediction
+        """
+        xt_B_C_T_H_W_input = xt_B_C_T_H_W.clone()
+        if condition.is_video:
+            condition_state_in_B_C_T_H_W = condition.gt_frames.type_as(xt_B_C_T_H_W)
+            if not condition.use_video_condition:
+                # When using random dropout, we zero out the ground truth frames
+                condition_state_in_B_C_T_H_W = condition_state_in_B_C_T_H_W * 0
+
+            _, C, _, _, _ = xt_B_C_T_H_W.shape
+            condition_video_mask = condition.condition_video_input_mask_B_C_T_H_W.repeat(1, C, 1, 1, 1).type_as(
+                xt_B_C_T_H_W
+            )
+
+            # Make the first few frames of x_t be the ground truth frames
+            xt_B_C_T_H_W = condition_state_in_B_C_T_H_W * condition_video_mask + xt_B_C_T_H_W * (
+                1 - condition_video_mask
+            )
+
+            if self.config.conditional_frame_timestep >= 0:
+                condition_video_mask_B_1_T_1_1 = condition_video_mask.mean(dim=[1, 3, 4], keepdim=True)
+                timestep_cond_B_1_T_1_1 = (
+                    torch.ones_like(condition_video_mask_B_1_T_1_1) * self.config.conditional_frame_timestep
+                )
+
+                timesteps_B_1_T_1_1 = timestep_cond_B_1_T_1_1 * condition_video_mask_B_1_T_1_1 + timesteps_B_T * (
+                    1 - condition_video_mask_B_1_T_1_1
+                )
+
+                timesteps_B_T = timesteps_B_1_T_1_1.squeeze()
+                timesteps_B_T = (
+                    timesteps_B_T.unsqueeze(0) if timesteps_B_T.ndim == 1 else timesteps_B_T
+                )  # add dimension for batch
+
+        # forward pass through the network
+        net_output_B_C_T_H_W = self.net(
+            x_B_C_T_H_W=xt_B_C_T_H_W.to(**self.tensor_kwargs),  # Eq. 7 of https://arxiv.org/pdf/2206.00364.pdf
+            timesteps_B_T=timesteps_B_T,  # Eq. 7 of https://arxiv.org/pdf/2206.00364.pdf
+            **condition.to_dict(),
+        ).float()
+
+        if condition.is_video and self.config.denoise_replace_gt_frames:
+            # import pdb; pdb.set_trace()
+            gt_frames_x0 = condition.gt_frames.type_as(net_output_B_C_T_H_W)
+            # gt_frames_velocity = noise - gt_frames_x0
+            pseudo_gt_frames_velocity = (xt_B_C_T_H_W_input - gt_frames_x0) / (sigma + 1e-8)
+            net_output_B_C_T_H_W = pseudo_gt_frames_velocity * condition_video_mask + net_output_B_C_T_H_W * (
+                1 - condition_video_mask
+            )
+
+        return net_output_B_C_T_H_W
+    #####################################################################################################
 
     def get_velocity_fn_from_batch(
         self,
@@ -210,6 +278,82 @@ class Video2WorldModelRectifiedFlow(Text2WorldModelRectifiedFlow):
             return velocity_pred
 
         return velocity_fn
+    
+    #####################################################################################################
+    def get_velocity_fn_from_batch_pnp(
+        self,
+        data_batch: Dict,
+        guidance: float = 1.5,
+        is_negative_prompt: bool = False,
+    ) -> Callable:
+        """
+        Generates a callable function `x0_fn` based on the provided data batch and guidance factor.
+
+        This function first processes the input data batch through a conditioning workflow (`conditioner`) to obtain conditioned and unconditioned states. It then defines a nested function `x0_fn` which applies a denoising operation on an input `noise_x` at a given noise level `sigma` using both the conditioned and unconditioned states.
+
+        Args:
+        - data_batch (Dict): A batch of data used for conditioning. The format and content of this dictionary should align with the expectations of the `self.conditioner`
+        - guidance (float, optional): A scalar value that modulates the influence of the conditioned state relative to the unconditioned state in the output. Defaults to 1.5.
+        - is_negative_prompt (bool): use negative prompt t5 in uncondition if true
+
+        Returns:
+        - Callable: A function `x0_fn(noise_x, sigma)` that takes two arguments, `noise_x` and `sigma`, and return velocity predictoin
+
+        The returned function is suitable for use in scenarios where a denoised state is required based on both conditioned and unconditioned inputs, with an adjustable level of guidance influence.
+        """
+
+        if NUM_CONDITIONAL_FRAMES_KEY in data_batch:
+            num_conditional_frames = data_batch[NUM_CONDITIONAL_FRAMES_KEY]
+        else:
+            num_conditional_frames = 1
+
+        if is_negative_prompt:
+            condition, uncondition = self.conditioner.get_condition_with_negative_prompt(data_batch)
+        else:
+            condition, uncondition = self.conditioner.get_condition_uncondition(data_batch)
+
+        is_image_batch = self.is_image_batch(data_batch)
+        condition = condition.edit_data_type(DataType.IMAGE if is_image_batch else DataType.VIDEO)
+        uncondition = uncondition.edit_data_type(DataType.IMAGE if is_image_batch else DataType.VIDEO)
+        _, x0, _ = self.get_data_and_condition(data_batch)
+        # override condition with inference mode; num_conditional_frames used Here!
+        condition = condition.set_video_condition(
+            gt_frames=x0,
+            random_min_num_conditional_frames=self.config.min_num_conditional_frames,
+            random_max_num_conditional_frames=self.config.max_num_conditional_frames,
+            num_conditional_frames=num_conditional_frames,
+            conditional_frames_probs=self.config.conditional_frames_probs,
+        )
+        uncondition = uncondition.set_video_condition(
+            gt_frames=x0,
+            random_min_num_conditional_frames=self.config.min_num_conditional_frames,
+            random_max_num_conditional_frames=self.config.max_num_conditional_frames,
+            num_conditional_frames=num_conditional_frames,
+            conditional_frames_probs=self.config.conditional_frames_probs,
+        )
+        condition = condition.edit_for_inference(is_cfg_conditional=True, num_conditional_frames=num_conditional_frames)
+        uncondition = uncondition.edit_for_inference(
+            is_cfg_conditional=False, num_conditional_frames=num_conditional_frames
+        )
+
+        _, condition, _, _ = self.broadcast_split_for_model_parallelsim(x0, condition, None, None)
+        _, uncondition, _, _ = self.broadcast_split_for_model_parallelsim(x0, uncondition, None, None)
+
+        if parallel_state.is_initialized():
+            pass
+        else:
+            assert not self.net.is_context_parallel_enabled, (
+                "parallel_state is not initialized, context parallel should be turned off."
+            )
+
+        def velocity_fn(noise: torch.Tensor, noise_x: torch.Tensor, timestep: torch.Tensor, sigma: torch.Tensor) -> torch.Tensor:
+            cond_v = self.denoise_pnp(noise, noise_x, timestep, sigma, condition)
+            uncond_v = self.denoise_pnp(noise, noise_x, timestep, sigma, uncondition)
+            velocity_pred = cond_v + guidance * (cond_v - uncond_v)
+            return velocity_pred
+
+        return velocity_fn
+    #####################################################################################################
 
     def denoise_edm(
         self,

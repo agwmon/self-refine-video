@@ -460,8 +460,22 @@ class InferenceArguments(CommonInferenceArguments):
     "Negative prompt - describing what you don't want in the generated video."
     seed: int = 0
     "Seed for generation randomness."
-    guidance: Guidance = 7
+    guidance: Guidance = 4 # 7 (4 generally good for cosmos2.5)
     """Range from 0 to 7: the higher the value, the closer the generated video adheres to the prompt."""
+    
+    # hyperparameters for predict-and-perturb
+    stochastic_plan: list[tuple[int, int, int] | dict[str, int]] | None = pydantic.Field(
+        default_factory=lambda: [{"start": 3, "end": 8, "steps": 2}, {"start": 9, "end": 15, "steps": 1}]
+    ) # [(3,8,2), (9,15,1)] or [{"start": 3, "end": 8, "steps": 2}, {"start": 9, "end": 15, "steps": 1}] format
+    """Stochastic plan for predict-and-perturb. List of (start, end, steps) tuples or list of dicts with 'start', 'end', 'steps' keys."""
+    ths_uncertainty: float = 0.5
+    """Uncertainty threshold for predict-and-perturb."""
+    p_norm: int = 1
+    """P-norm for uncertainty estimation (we used L1 norm)."""
+    certain_percentage: float = 0.999
+    """If certain area percentage is larger than this value, skip P&P iterations."""
+
+
 
     @pydantic.model_validator(mode="after")
     def validate_input_path(self) -> Self:
