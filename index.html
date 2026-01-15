@@ -553,6 +553,7 @@ blockquote {
     padding-bottom: 1px;
     padding-left: 5px;
     padding-right: 5px;
+    font-size: 24px;
 }
 .video-carousel {
     position: relative;
@@ -628,7 +629,7 @@ blockquote {
 }
 .side-by-side {
     display: flex;
-    gap: 16px;
+    gap: 60px;
     justify-content: center;
     align-items: stretch;
     flex-wrap: nowrap;
@@ -745,10 +746,73 @@ blockquote {
     display: block;
 }
 .motion-label {
-    font-size: 14px;
-    font-weight: 600;
-    margin: 4px 0 0;
+    font-size: 20px;
+    font-weight: 700;
+    margin: 0px 0px 6px;
     color: #333;
+}
+.ours-row-wrapper {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    background: linear-gradient(135deg, rgba(79, 172, 254, 0.15) 0%, rgba(0, 242, 254, 0.15) 100%);
+    border-radius: 12px;
+    padding: 10px;
+    border: 2px solid rgba(79, 172, 254, 0.4);
+}
+.ours-row-wrapper .row-label {
+    color: #1a73e8;
+}
+.ours-row-wrapper .motion-label {
+    color: #1a73e8;
+}
+.base-row-wrapper,
+.nfe-row-wrapper,
+.flowmo-row-wrapper,
+.bon-row-wrapper {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    border-radius: 12px;
+    padding: 10px;
+    border: 2px solid transparent;
+}
+.base-row-wrapper {
+    background: transparent;
+    border-color: rgba(255, 193, 7, 0.5);
+}
+.base-row-wrapper .row-label {
+    color: #d68400;
+}
+.nfe-row-wrapper {
+    background: transparent;
+    border-color: rgba(172, 61, 61, 0.5);
+}
+.nfe-row-wrapper .row-label {
+    color: #b13d3d;
+}
+.flowmo-row-wrapper {
+    background: transparent;
+    border-color: rgba(156, 39, 176, 0.5);
+}
+.flowmo-row-wrapper .row-label {
+    color: #8b1fa9;
+}
+.bon-row-wrapper {
+    background: transparent;
+    border-color: rgba(96, 125, 139, 0.5);
+}
+.bon-row-wrapper .row-label {
+    color: #455a64;
+}
+.row-label {
+    grid-column: 1 / -1;
+    text-align: center;
+    font-weight: 700;
+    margin: 0 0 6px;
+    font-size: 20px;
 }
 
 @media only screen and (max-width: 768px) {
@@ -782,6 +846,14 @@ blockquote {
     color: #666;
     margin: 2px 0 8px;
     font-style: italic;
+}
+.prompt-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 6px;
+    width: 100%;
+    margin: 6px auto 0;
+    text-align: center;
 }
 
 @media only screen and (max-width: 768px) {
@@ -833,7 +905,7 @@ blockquote {
             <span><sup>4</sup>DeepAuto.ai</span> <br>
         </div>
 
-        <p class="equal-contrib"><span><sup>*</sup>Equal Contribution, <sup>&dagger;</sup>Equal Advising</span></p>
+        <p class="equal-contrib"><span><sup>*</sup>Equal Contribution,&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<sup>&dagger;</sup>Equal Advising</span></p>
         
         <div class="affil-row">
             <div class="venue text-center"><b>ArXiv 2026</b></div>
@@ -880,13 +952,14 @@ blockquote {
                     <source src="assets/videos/etc/physics.mp4" type="video/mp4">
                 </video>
                 <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                    <source src="assets/videos/etc/spatial1.mp4" type="video/mp4">
+                    <source src="assets/videos/etc/spatial.mp4" type="video/mp4">
                 </video>
         </div>
         <br>
         <blockquote>    
             <p>
-                <b>[TL;DR]</b> TBD. Self-Refinement.
+                <b>[TL;DR]</b> We present <b>Predict-and-Perturb (P&P)</b>, a <b>self-refining</b> video sampling method that reuses a pre-trained video generator as a denoising autoencoder to iteratively refine samples.
+                With ~50% additional NFEs, it improves motion coherence and physical realism <i>without any external verifier, training, or dataset</i>.
             </p>
         </blockquote>
     </div>
@@ -998,160 +1071,178 @@ blockquote {
                 <div class="motion-compare-slide">
                     <div class="motion-compare-grid-4x3">
                         <!-- Row 1: Ours -->
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/ours/49.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Ours</p>
-                        </div>
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/ours/70.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Ours</p>
-                        </div>
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/ours/79.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Ours</p>
+                        <div class="ours-row-wrapper">
+                            <p class="row-label">Ours</p>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/ours/49.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/ours/70.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/ours/79.mp4" type="video/mp4">
+                                </video>
+                            </div>
                         </div>
                         <!-- Row 2: Base -->
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/base/49.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Base</p>
-                        </div>
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/base/70.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Base</p>
-                        </div>
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/base/79.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Base</p>
+                        <div class="base-row-wrapper">
+                            <p class="row-label">Base</p>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/base/49.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">Base</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/base/70.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">Base</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/base/79.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">Base</p> -->
+                            </div>
                         </div>
                         <!-- Row 3: NFE×2 -->
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/nfex2/49.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">NFE×2</p>
-                        </div>
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/nfex2/70.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">NFE×2</p>
-                        </div>
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/nfex2/79.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">NFE×2</p>
+                        <div class="nfe-row-wrapper">
+                            <p class="row-label">NFE×2</p>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/nfex2/49.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">NFE×2</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/nfex2/70.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">NFE×2</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/nfex2/79.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">NFE×2</p> -->
+                            </div>
                         </div>
                         <!-- Row 4: FlowMo -->
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/flowmo/49.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">FlowMo</p>
-                        </div>
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/flowmo/70.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">FlowMo</p>
-                        </div>
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/flowmo/79.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">FlowMo</p>
+                        <div class="flowmo-row-wrapper">
+                            <p class="row-label">FlowMo</p>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/flowmo/49.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">FlowMo</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/flowmo/70.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">FlowMo</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/flowmo/79.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">FlowMo</p> -->
+                            </div>
                         </div>
                     </div>
                 </div>
                 <div class="motion-compare-slide">
                     <div class="motion-compare-grid-4x3">
                         <!-- Row 1: Ours -->
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/ours/5.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Ours</p>
-                        </div>
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/ours/10.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Ours</p>
-                        </div>
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/ours/41.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Ours</p>
+                        <div class="ours-row-wrapper">
+                            <p class="row-label">Ours</p>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/ours/5.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/ours/10.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/ours/41.mp4" type="video/mp4">
+                                </video>
+                            </div>
                         </div>
                         <!-- Row 2: Base -->
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/base/5.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Base</p>
-                        </div>
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/base/10.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Base</p>
-                        </div>
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/base/41.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Base</p>
+                        <div class="base-row-wrapper">
+                            <p class="row-label">Base</p>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/base/5.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">Base</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/base/10.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">Base</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/base/41.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">Base</p> -->
+                            </div>
                         </div>
                         <!-- Row 3: NFE×2 -->
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/nfex2/5.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">NFE×2</p>
-                        </div>
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/nfex2/10.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">NFE×2</p>
-                        </div>
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/nfex2/41.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">NFE×2</p>
+                        <div class="nfe-row-wrapper">
+                            <p class="row-label">NFE×2</p>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/nfex2/5.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">NFE×2</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/nfex2/10.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">NFE×2</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/nfex2/41.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">NFE×2</p> -->
+                            </div>
                         </div>
                         <!-- Row 4: FlowMo -->
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/flowmo/5.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">FlowMo</p>
-                        </div>
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/flowmo/10.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">FlowMo</p>
-                        </div>
-                        <div class="motion-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/motion/flowmo/41.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">FlowMo</p>
+                        <div class="flowmo-row-wrapper">
+                            <p class="row-label">FlowMo</p>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/flowmo/5.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">FlowMo</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/flowmo/10.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">FlowMo</p> -->
+                            </div>
+                            <div class="motion-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/motion/flowmo/41.mp4" type="video/mp4">
+                                </video>
+                                <!-- <p class="motion-label">FlowMo</p> -->
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -1192,132 +1283,130 @@ Applied to Cosmos-Predict2.5-2B, it reduces common robotics artifacts such as un
                 <div class="motion-compare-slide">
                     <h4 style="text-align: center; margin-bottom: 10px;">Cosmos-Predict2.5-2B</h4>
                     <div class="robot-compare-grid-3x3">
-                        <!-- Row 1: Ours -->
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/cosmos/ours/robot_008.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Ours</p>
+                        <div class="ours-row-wrapper">
+                            <p class="row-label">Ours</p>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/ours/robot_008.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/ours/robot_028.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/ours/robot_064.mp4" type="video/mp4">
+                                </video>
+                            </div>
                         </div>
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/cosmos/ours/robot_028.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Ours</p>
+                        <div class="base-row-wrapper">
+                            <p class="row-label">Base</p>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/base/robot_008.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/base/robot_028.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/base/robot_064.mp4" type="video/mp4">
+                                </video>
+                            </div>
                         </div>
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/cosmos/ours/robot_064.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Ours</p>
+                        <div class="bon-row-wrapper">
+                            <p class="row-label">Rejection Sampling (best-of-4)</p>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/bon/robot_008.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/bon/robot_028.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/cosmos/bon/robot_064.mp4" type="video/mp4">
+                                </video>
+                            </div>
                         </div>
-                        <!-- Row 2: Base -->
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/cosmos/base/robot_008.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Base</p>
-                        </div>
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/cosmos/base/robot_028.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Base</p>
-                        </div>
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/cosmos/base/robot_064.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Base</p>
-                        </div>
-                        <!-- Row 3: Rejection Sampling -->
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/cosmos/bon/robot_008.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Rejection Sampling (best-of-4)</p>
-                            <p class="video-prompt">TBD.</p>
-                        </div>
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/cosmos/bon/robot_028.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Rejection Sampling (best-of-4)</p>
-                            <p class="video-prompt">TBD.</p>
-                        </div>
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/cosmos/bon/robot_064.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Rejection Sampling (best-of-4)</p>
-                            <p class="video-prompt">TBD.</p>
-                        </div>
+                    </div>
+                    <div class="prompt-grid-3">
+                        <p class="video-prompt">Prompt: TBD</p>
+                        <p class="video-prompt">Prompt: TBD</p>
+                        <p class="video-prompt">Prompt: TBD</p>
                     </div>
                 </div>
                 <!-- Slide 2: Wan I2V -->
                 <div class="motion-compare-slide">
                     <h4 style="text-align: center; margin-bottom: 10px;">Wan2.2-A14B-I2V</h4>
                     <div class="robot-compare-grid-3x3">
-                        <!-- Row 1: Ours -->
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/wani2v/ours/robot_058.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Ours</p>
+                        <div class="ours-row-wrapper">
+                            <p class="row-label">Ours</p>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/ours/robot_058.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/ours/robot_071.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/ours/robot_074.mp4" type="video/mp4">
+                                </video>
+                            </div>
                         </div>
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/wani2v/ours/robot_071.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Ours</p>
+                        <div class="base-row-wrapper">
+                            <p class="row-label">Base</p>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/base/robot_058.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/base/robot_071.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/base/robot_074.mp4" type="video/mp4">
+                                </video>
+                            </div>
                         </div>
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/wani2v/ours/robot_074.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Ours</p>
+                        <div class="bon-row-wrapper">
+                            <p class="row-label">Rejection Sampling (best-of-4)</p>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/bon/robot_058.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/bon/robot_071.mp4" type="video/mp4">
+                                </video>
+                            </div>
+                            <div class="robot-video-item">
+                                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                    <source src="assets/videos/wani2v/bon/robot_074.mp4" type="video/mp4">
+                                </video>
+                            </div>
                         </div>
-                        <!-- Row 2: Base -->
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/wani2v/base/robot_058.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Base</p>
-                        </div>
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/wani2v/base/robot_071.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Base</p>
-                        </div>
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/wani2v/base/robot_074.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Base</p>
-                        </div>
-                        <!-- Row 3: Rejection Sampling -->
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/wani2v/bon/robot_058.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Rejection Sampling (best-of-4)</p>
-                            <p class="video-prompt">TBD.</p>
-                        </div>
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/wani2v/bon/robot_071.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Rejection Sampling (best-of-4)</p>
-                            <p class="video-prompt">TBD.</p>
-                        </div>
-                        <div class="robot-video-item">
-                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                <source src="assets/videos/wani2v/bon/robot_074.mp4" type="video/mp4">
-                            </video>
-                            <p class="motion-label">Rejection Sampling (best-of-4)</p>
-                            <p class="video-prompt">TBD.</p>
-                        </div>
+                    </div>
+                    <div class="prompt-grid-3">
+                        <p class="video-prompt">Prompt: TBD</p>
+                        <p class="video-prompt">Prompt: TBD</p>
+                        <p class="video-prompt">Prompt: TBD</p>
                     </div>
                 </div>
             </div>
@@ -1333,7 +1422,7 @@ Applied to Cosmos-Predict2.5-2B, it reduces common robotics artifacts such as un
                     <source src="assets/videos/etc/14.mp4" type="video/mp4">
                 </video>
                 <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                    <source src="assets/videos/etc/spatial.mp4" type="video/mp4">
+                    <source src="assets/videos/etc/spatial1.mp4" type="video/mp4">
                 </video>
                 <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
                     <source src="assets/videos/etc/graph_ours.mp4" type="video/mp4">
