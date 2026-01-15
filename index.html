@@ -2,7 +2,16 @@
 <html>
 
 <script type="text/javascript" charset="utf-8" src="https://ajax.googleapis.com/ajax/libs/jquery/1.3.2/jquery.min.js"></script>
-<script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+<!-- <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script> -->
+<script>
+  window.MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$', '$$'], ['\\[', '\\]']]
+    }
+  };
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
 <script>
 const carouselState = new Map();
 const carouselTimers = new Map();
@@ -83,8 +92,12 @@ function startCarouselAutoRotate(carouselId, intervalMs = 3500) {
 }
 
 function pauseOtherVideos(currentVideo) {
+    const keepConcurrent = true;
     document.querySelectorAll("video").forEach((video) => {
         if (video !== currentVideo) {
+            if (keepConcurrent && video.dataset.concurrent === "true") {
+                return;
+            }
             video.pause();
         }
     });
@@ -92,6 +105,7 @@ function pauseOtherVideos(currentVideo) {
 
 function setActiveVideo(video) {
     if (!video) return;
+    if (video.dataset.concurrent === "true") return;
     if (activeVideo && activeVideo !== video) {
         activeVideo.pause();
     }
@@ -138,6 +152,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     });
 
+    document.querySelectorAll("video[data-autoplay-inline='true']").forEach((video) => {
+        video.muted = true;
+        video.playsInline = true;
+        tryAutoPlay(video);
+    });
+
     document.querySelectorAll("video").forEach((video) => {
         video.addEventListener("play", () => setActiveVideo(video));
     });
@@ -168,9 +188,9 @@ body {
     margin-right: auto;
 }
 
-@media screen and (min-width: 980px){
+@media screen and (min-width: 1200px){
     body {
-        width: 980px;
+        width: 1200px;
     }
 }
 
@@ -545,9 +565,10 @@ blockquote {
 .video-carousel-track {
     display: flex;
     transition: transform 0.4s ease-in-out;
+    width: 100%;
 }
 
-.video-carousel video {
+.video-carousel-track > video {
     width: 100%;
     flex-shrink: 0;
 }
@@ -602,16 +623,94 @@ blockquote {
 .method-figure {
     text-align: center;
 }
+.equation-compare {
+    margin: 4px auto 0;
+}
 .side-by-side {
     display: flex;
     gap: 16px;
     justify-content: center;
-    align-items: center;
+    align-items: stretch;
     flex-wrap: nowrap;
 }
+.side-by-side figure {
+    flex: 1 1 0;
+    margin: 0;
+    max-width: 480px;
+    display: flex;
+    flex-direction: column;
+}
 .side-by-side img {
-    width: 48%;
+    width: 100%;
+    height: 320px;
+    object-fit: contain;
+}
+.side-by-side.equation-compare {
+    align-items: center;
+}
+.side-by-side.equation-compare figure {
+    flex: 0 0 auto;
+    max-width: none;
+}
+.side-by-side.equation-compare img {
+    height: 70px;
+    width: auto;
+    max-width: 100%;
+}
+
+.side-by-side.pnp-compare {
+    gap: 10px;
+}
+.side-by-side.pnp-compare img {
+    height: 80px;
+}
+
+.video-grid-three {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    width: 100%;
+    margin: 10px auto 0;
+    align-items: start;
+}
+.video-grid-three video {
+    width: 100%;
     height: auto;
+}
+
+.video-grid-two {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    width: 66.66%;
+    margin: 10px auto 0;
+    align-items: start;
+}
+.video-grid-two video {
+    width: 100%;
+    height: auto;
+}
+
+@media only screen and (max-width: 620px) {
+    .video-grid-three {
+        grid-template-columns: 1fr;
+    }
+    .video-grid-two {
+        width: 100%;
+        grid-template-columns: 1fr;
+    }
+}
+
+@media only screen and (max-width: 620px) {
+    .side-by-side.equation-compare img {
+        height: 100px;
+    }
+    .side-by-side.pnp-compare {
+        gap: 8px;
+    }
+    .side-by-side.pnp-compare img {
+        height: 105px;
+    }
 }
 .ablation-figure {
     margin: 0 auto;
@@ -620,48 +719,121 @@ blockquote {
     margin: 0;
 }
 
+/* Motion Comparison Carousel Styles */
+.motion-compare-slide {
+    width: 100%;
+    flex: 0 0 100%;
+    box-sizing: border-box;
+}
+.motion-compare-grid-4x3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: auto auto auto auto;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+.motion-video-item {
+    text-align: center;
+    min-width: 0;
+    overflow: hidden;
+}
+.motion-video-item video {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+.motion-label {
+    font-size: 14px;
+    font-weight: 600;
+    margin: 4px 0 0;
+    color: #333;
+}
+
+@media only screen and (max-width: 768px) {
+    .motion-compare-grid-4x3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Robot Comparison Grid Styles */
+.robot-compare-grid-3x3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    grid-template-rows: auto auto auto;
+    gap: 8px;
+    width: 100%;
+    box-sizing: border-box;
+}
+.robot-video-item {
+    text-align: center;
+    min-width: 0;
+    overflow: hidden;
+}
+.robot-video-item video {
+    width: 100%;
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+.video-prompt {
+    font-size: 12px;
+    color: #666;
+    margin: 2px 0 8px;
+    font-style: italic;
+}
+
+@media only screen and (max-width: 768px) {
+    .robot-compare-grid-3x3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
 
 </style>
 
 <script type="text/javascript" src="../js/hidebib.js"></script>
     <link href='https://fonts.googleapis.com/css?family=Titillium+Web:400,600,400italic,600italic,300,300italic' rel='stylesheet' type='text/css'>
     <head>
-        <title>Avatar Forcing: Real-Time Interactive Head Avatar Generation for Natural Conversation</title>
+        <title>Self-Refining Video Sampling</title>
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        <meta property="og:description" content="Avatar Forcing: Real-Time Interactive Head Avatar Generation for Natural Conversation"/>
+        <meta property="og:description" content="Self-Refining Video Sampling"/>
         <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
         <link href="https://fonts.googleapis.com/css2?family=FontAwesome" rel="stylesheet">
         <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:creator" content="@taekyung.ki">
-        <meta name="twitter:title" content="Avatar Forcing: Real-Time Interactive Head Avatar Generation for Natural Conversation">
+        <meta name="twitter:creator" content="@sangwon.jang">
+        <meta name="twitter:title" content="Self-Refining Video Sampling">
     </head>
 
 <body>
 <div class="container">
     <div class="paper-title">
     <h1>
-        <b>Avatar Forcing</b>: <br> Real-Time Interactive Head Avatar Generation for Natural Conversation
+        Self-Refining Video Sampling
     </h1>
     </div>
 
     <div id="authors">
         <center>
             <div class="author-row-new">
-                <a href="https://taekyungki.github.io">Taekyung Ki<sup>1,*</sup></a>,
                 <a href="https://agwmon.github.io">Sangwon Jang<sup>1,*</sup></a>,
-                <a href="https://harryjo97.github.io">Jaehyeong Jo<sup>1</sup></a>,
-                <a href="https://jaehong31.github.io">Jaehong Yoon<sup>2</sup></a>,
-                <a href="http://www.sungjuhwang.com">Sung Ju Hwang<sup>1,3</sup></a>
+                <a href="https://taekyungki.github.io">Taekyung Ki<sup>1,*</sup></a>,
+                <a href="https://harryjo97.github.io">Jaehyeong Jo<sup>1,*</sup></a>,
+                <a href="https://www.sainingxie.com/">Saining Xie<sup>2</sup></a>,
+                <a href="https://jaehong31.github.io">Jaehong Yoon<sup>3,&dagger;</sup></a>,
+                <a href="http://www.sungjuhwang.com">Sung Ju Hwang<sup>1,4,&dagger;</sup></a>
             </div>
         </center>
         <center>
         <div class="affiliations">
             <span><sup>1</sup>KAIST</span>&nbsp;&nbsp;&nbsp;
-            <span><sup>2</sup>NTU Singapore</span>&nbsp;&nbsp;&nbsp;
-            <span><sup>3</sup>DeepAuto.ai</span> <br>
+            <span><sup>2</sup>NYU</span>&nbsp;&nbsp;&nbsp;
+            <span><sup>3</sup>NTU Singapore</span>&nbsp;&nbsp;&nbsp;
+            <span><sup>4</sup>DeepAuto.ai</span> <br>
         </div>
 
-        <p class="equal-contrib"><span><sup>*</sup>Equal Contribution</span></p>
+        <p class="equal-contrib"><span><sup>*</sup>Equal Contribution, <sup>&dagger;</sup>Equal Advising</span></p>
         
         <div class="affil-row">
             <div class="venue text-center"><b>ArXiv 2026</b></div>
@@ -674,15 +846,13 @@ blockquote {
                     <span class="fas fa-file-alt"></span> 
                     Paper
                 </a>   
-                <a class="github-btn" href="https://github.com/TaekyungKi/AvatarForcing">
+                <a class="github-btn" href="https://github.com/agwmon/self-refine-video">
                     <span class="fab fa-github"></span> 
                     Code
                 </a>           
         </div>
-        <p style="text-align: center;"> ** The code will be released soon. **</p>
-        <p style="text-align: center;"> All videos in this page contain audio.</p>
         </div>
-        <div class="video-carousel auto-carousel" data-carousel="c5" data-autoplay="true">
+        <!-- <div class="video-carousel auto-carousel" data-carousel="c5" data-autoplay="true">
             <button class="carousel-btn left" onclick="moveCarousel('c5', -1)">&#10094;</button>
             <button class="carousel-btn right" onclick="moveCarousel('c5', 1)">&#10095;</button>
             <div class="video-carousel-track" id="carousel-c5">
@@ -693,11 +863,30 @@ blockquote {
                     <source src="assets/videos/rumi_interface_02.mp4" type="video/mp4">
                 </video>
             </div>
+        </div> -->
+        <div class="video-grid-three">
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/motion/ours/79.mp4" type="video/mp4">
+                </video>
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/videos/wani2v/ours/robot_074.mp4" type="video/mp4">
+                </video>
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/videos/etc/graph_ours.mp4" type="video/mp4">
+                </video>
         </div>
+        <div class="video-grid-two">
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/videos/etc/physics.mp4" type="video/mp4">
+                </video>
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/videos/etc/spatial1.mp4" type="video/mp4">
+                </video>
+        </div>
+        <br>
         <blockquote>    
             <p>
-                <b>[TL;DR]</b> We present <b>Avatar Forcing</b>, a diffusion forcing-based head avatar generation model that can interact with users through their audio-visual signals at low latency on a single GPU (H100, 14GB).
-                We improve interactive motions (e.g., active listening) through <b>preference optimization</b> by utilizing synthesized motion latents as losing samples.
+                <b>[TL;DR]</b> TBD. Self-Refinement.
             </p>
         </blockquote>
     </div>
@@ -706,60 +895,272 @@ blockquote {
     <section>
         <h2>Methods</h2>
         <hr>
-        <h3>Causal Motion Generation with Diffusion Forcing</h3>
-        <p> 
-            Conventional bidirectional DiT (used in INFP, CVPR 2025) generates long-range motion latent chunks that include future latents for temporal consistency.
-            This design naturally restricts real-time interaction with users, apart from inference time.
-            Avatar Forcing causally generates motion latents based on diffusion forcing, allowing interaction with users through their multimodal audio-visual signals.
-            We introduce blockwise causal look-ahead masks for motion latent generation, which address temporal inconsistency between adjacent motion blocks.
-        </p>
-            <div class="method-compare">
-                <img src="assets/images/vs_bidirectional.png" alt="PDF Image">
-                <img src="assets/images/mask.png" alt="PDF Image">
-            </div>
-        <br><br>
-        <h3>Expressive & Engaging Interactive Motion Generation with Direct Preference Optimization (DPO)</h3>
+
+        <!-- <p>
+            We further introduce a self-refining mechanism that iteratively improves generation quality and temporal consistency.
+        </p> -->
+        <h3>Flow Matching as Denoising Autoencoder</h3>
             <p>
-                We observe that listening avatar videos show less expressive or less active motions than talking avatar videos.
-                Modeling listening motion generation on these videos leads to stiff or static motion generation.
-                This limitation highlights the necessity of quantifying activeness or naturalness, or alternatively using human labels; however, obtaining such consistent measurements or labels is difficult.
-                <div class="figure method-figure" style="--img-height: 200px;">
-                    <img src="assets/images/data-dist.png" alt="PDF Image">
+                We revisit the connection between diffusion models and denoising autoencoders (DAE) [1-2], and extend this connection to interpret flow matching as a DAE from a training objective perspective.
+                In particular, up to a time-dependent weighting, the flow-matching loss is equivalent to a standard DAE [3] reconstruction objective.
+                <div class="side-by-side equation-compare">
+                    <figure>
+                        <img src="assets/items/fm_loss.png" alt="Flow matching loss">
+                    </figure>
+                    <figure>
+                        <img src="assets/items/dae_loss.png" alt="DAE loss">
+                    </figure>
                 </div>
+
+            
+            
+                for which the model learns to denoise the corrupted input $z_t$ back to the clean sample $z_1$. 
             </p>
             <p> 
-                To tackle this problem, we introduce direct preference optimization (DPO) targeting more engaing and more active motion generation, leveraging synthesized non-active motion latents as less-preferred samples.
-                This learning-from-losing paradigm significantly improves motion activeness and naturalness in a cost-effective way. We reformulate DPO post-training obejctive in the context of the diffusion forcing framework.
-                <div class="figure method-figure" style="--img-height: 100px;">
-                    <img src="assets/images/dpo.png" alt="PDF Image">
+                Thus, flow matching can be viewed as training a time-conditioned DAE. 
+                At inference time, we repurpose the pre-trained model as DAE, <i>self-refiner</i>, iteratively refining samples toward the data manifold.
+                <div class="side-by-side equation-compare pnp-compare">
+                    <figure>
+                        <img src="assets/items/pnp.png" alt="PnP iteration">
+                    </figure>
+                    <figure>
+                        <img src="assets/items/pnp-2.png" alt="PnP multiple">
+                    </figure>
                 </div>
             </p>
+            <p>
+                We define a simple refinement iteration, termed <b>Predict-and-Perturb (P&P)</b>, which refines the latent 
+                $k$ times at a fixed noise level $t$. <b>Predict</b> performs self-correction via denoising, while <b>Perturb</b> locally resamples the latent at the same noise level, enabling exploration and mitigating early lock-in during sampling.
+            </p>
+            
+            <p>
+            [1] Vincent Pascal, A Connection Between Score Matching and Denoising Autoencoders, Neural computation, 2011
+            <br>
+            [2] Song & Ermon, Generative Modeling by Estimating Gradients of the Data Distribution, NeurIPS, 2019
+            <br>
+            [3] Bengio et al., Generalized Denoising Auto-encoders as Generative Models, NeurIPS, 2013
+            </p>
+        
+        <br><br>
+        <!-- <h3>Self-Refining Video Sampling</h3> -->
+
+            <div class="side-by-side">
+                <figure>
+                    <img src="assets/items/figure_1_concept.png" alt="Figure a">
+                    <figcaption class="caption"><b>Concept of the self-refining video sampling.</b> Within the same noise level, the video latent $z_t$ is refined as the predicted endpoint $\hat{z}_1$ is pulled toward the data manifold. </figcaption>
+                </figure>
+                <figure>
+                    <img src="assets/items/figure_2.png" alt="Figure b">
+                    <figcaption class="caption"><b>Sampling comparison on 2D synthetic dataset.</b> <b>(a-b)</b> P&P generates samples closer to the data manifold compared to the Euler solver. <b>(c-d)</b> When fixing the timestep, iterative P&P pulls the prediction $\hat{z}_1$ closer to the data manifold</figcaption>
+                </figure>
+            </div>
+        <p> 
+            Mirroring the corrupt-reconstruct structure of a DAE, P&P performs an inner-loop refinement at each noise level, progressively pulling the latent toward <b>higher-density regions of the learned video distribution</b>. This refinement promotes temporally coherent and physically plausible videos. As illustrated by the 2D toy experiment, P&P generates samples that lie closer to the data manifold.
+        </p>
+
+        <br><br>
+        <h3>Uncertainty-aware P&P</h3>
+        <p>
+            However, we observe that applying multiple P&P updates ($K \geq 3$) to videos, together with classifier-free guidance (CFG), can lead to over-saturation or simplification in static regions such as the background.
+            To address this, we propose an <b>uncertainty-aware P&P</b> that selectively refines only the locally uncertain regions.
+            Specifically, we estimate the model confidence using the prediction discrepancy, $\mathbf{U}=\|\hat{z}_1^{(k)}-\hat{z}_1^{(k+1)}\|_1,$ which measures how sensitive the prediction is to the Perturb step.
+
+            <div class="video-grid-three">
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/items/basket-video.mp4" type="video/mp4">
+                </video>
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/items/basket-unc.mp4" type="video/mp4">
+                </video>
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/items/basket-overlay.mp4" type="video/mp4">
+                </video>
+            </div>
+            <br>
+            Here, we apply the P&P update only to regions where the uncertainty $\mathbf{U}$ exceeds a predefined threshold $\tau$.
+            Notably, it does not require any additional model evaluations (NFE) since both predictions are already computed during the P&P process. Please refer to the paper for more details.
+        </p>
+        
 
     </section>
     
     <section>
         <h2>Results</h2>
         <hr>
-        <h3>Comparison with Baselines</h3>
-        <p>
-            Avatar Forcing outperforms baselines across four metric categories: Reactiveness, Motion Richness, Visual Quality, and Lip Sync.
-            In particular, it achieves superior rPCC scores, which measure the correlation between user and avatar motions.
-            Avatar Forcing also achieves strong performance in a human evaluation study.
-            <div class="figure method-figure" style="--img-height: 145px;">
-                <img src="assets/images/quantitative.png" alt="PDF Image">
-                <img src="assets/images/human-eval.png" alt="PDF Image">
-            </div>
-        </p>
+        <h3>Motion Enhanced Video Generation with Wan2.2-A14B T2V</h3>
+        <p>Wan2.2-A14B already generates human motion reasonably well, but our method can substantially further improve it.</p>
+        <!-- Motion Comparison Carousel: 1 carousel with 2 pages, each page has 4x3 grid (4 methods x 3 samples) -->
+        <div class="video-carousel" data-carousel="motion">
+            <button class="carousel-btn left" onclick="moveCarousel('motion', -1)">&#10094;</button>
+            <button class="carousel-btn right" onclick="moveCarousel('motion', 1)">&#10095;</button>
+            <div class="video-carousel-track" id="carousel-motion">
+                <!-- Page 1: samples 5, 10, 41 -->
+                <div class="motion-compare-slide">
+                    <div class="motion-compare-grid-4x3">
+                        <!-- Row 1: Ours -->
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/ours/49.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Ours</p>
+                        </div>
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/ours/70.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Ours</p>
+                        </div>
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/ours/79.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Ours</p>
+                        </div>
+                        <!-- Row 2: Base -->
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/base/49.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Base</p>
+                        </div>
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/base/70.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Base</p>
+                        </div>
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/base/79.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Base</p>
+                        </div>
+                        <!-- Row 3: NFE×2 -->
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/nfex2/49.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">NFE×2</p>
+                        </div>
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/nfex2/70.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">NFE×2</p>
+                        </div>
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/nfex2/79.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">NFE×2</p>
+                        </div>
+                        <!-- Row 4: FlowMo -->
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/flowmo/49.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">FlowMo</p>
+                        </div>
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/flowmo/70.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">FlowMo</p>
+                        </div>
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/flowmo/79.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">FlowMo</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="motion-compare-slide">
+                    <div class="motion-compare-grid-4x3">
+                        <!-- Row 1: Ours -->
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/ours/5.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Ours</p>
+                        </div>
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/ours/10.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Ours</p>
+                        </div>
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/ours/41.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Ours</p>
+                        </div>
+                        <!-- Row 2: Base -->
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/base/5.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Base</p>
+                        </div>
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/base/10.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Base</p>
+                        </div>
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/base/41.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Base</p>
+                        </div>
+                        <!-- Row 3: NFE×2 -->
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/nfex2/5.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">NFE×2</p>
+                        </div>
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/nfex2/10.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">NFE×2</p>
+                        </div>
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/nfex2/41.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">NFE×2</p>
+                        </div>
+                        <!-- Row 4: FlowMo -->
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/flowmo/5.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">FlowMo</p>
+                        </div>
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/flowmo/10.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">FlowMo</p>
+                        </div>
+                        <div class="motion-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/motion/flowmo/41.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">FlowMo</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Page 2: samples 49, 70, 79 -->
 
-        <p>We qualitatively compare Avatar Forcing with INFP using the demo video of INFP, as their official implementation is not available.
-            <div class="figure">
-                <video loop controls playsinline style="width: 100%;">
-                    <source src="assets/videos/main_compare.mp4" type="video/mp4">
-                </video>
             </div>
-        </p>
-        <p> </p>
-        <div class="video-carousel" data-carousel="c3">
+        </div>
+
+        <!-- <div class="video-carousel" data-carousel="c3">
             <button class="carousel-btn left" onclick="moveCarousel('c3', -1)">&#10094;</button>
             <button class="carousel-btn right" onclick="moveCarousel('c3', 1)">&#10095;</button>
         <p> We also reprouce INFP, denoted as INFP*, and compare with it.</p>
@@ -772,71 +1173,174 @@ blockquote {
                 </video>
             </div>
         </div>
-        <br>
+        <br> -->
 
-        <h3>Ablation Studies</h3>
-        <p class="ablation-text"> We conduct ablation studies on our key components: DPO and user's motion latent. Note the proposed DPO strategy significantly improves the reactiveness and motion richness.
-            Additionally, we can generate more reactive facial expression (e.g., mirroring) when incorporating the user's motion for the avatar motion generation.</p>
-        <br>
-            <div class="figure method-figure ablation-figure" style="--img-height: 150px;">
-            <img src="assets/images/ablation1.png" alt="PDF Image">
-        </div>
-        <div class="figure method-figure side-by-side ablation-figure">
-            <img src="assets/images/ablation_dpo.png" alt="PDF Image">
-            <img src="assets/images/ablation_user_motion.png" alt="PDF Image">
-        </div>
-        <br>
-        <p>We provide the video results including the blockwise causal look-ahead mask that help better illustrate the ablation study.
-        <div class="video-carousel" data-carousel="c7">
-            <button class="carousel-btn left" onclick="moveCarousel('c7', -1)">&#10094;</button>
-            <button class="carousel-btn right" onclick="moveCarousel('c7', 1)">&#10095;</button>
-            <div class="video-carousel-track" id="carousel-c7">
-                <video controls playsinline>
-                    <source src="assets/videos/02_ablation_wo_DPO.mp4" type="video/mp4">
-                </video>
-                <video controls playsinline>
-                    <source src="assets/videos/02_ablation_wo_user_motion.mp4" type="video/mp4">
-                </video>
-                <video controls playsinline>
-                    <source src="assets/videos/02_ablation_attention_mask_01.mp4" type="video/mp4">
-                </video>
-            </div>
-        </div>
-        </p>
+        <h3>Image-to-Video Robotics Video Generation with Cosmos-predict2.5-2B</h3>
+        <p> Our method is also applicable to Image-to-Video generation.
+Applied to Cosmos-Predict2.5-2B, it reduces common robotics artifacts such as unstable grasps and implausible interactions, and produces more consistent motion than rejection sampling with Cosmos-Reason1-7B (best-of-4). This may be useful for downstream tasks such as vision-language-action (VLA) models, where even small artifacts can significantly affect perception and action.</p>
+        <figure style="text-align: center;">
+            <img src="assets/items/table_robot.png" alt="Table Robot" style="width: 50%; max-width: 100%;">
+            <figcaption class="caption"><b>PAI-Bench-G</b> evaluation results on robotics I2V generaiton. Grasp and Robot-QA are measure by Gemini 3 Flash.</figcaption>
+        </figure>
 
-        <br>
-        <h2>Additional Results</h2>
-        <hr>
-        <h3>Talking Avatar Generation</h3>
-        <p class="carousel-desc"> We compare our method with talking avatar geneartion methods on HDTF. Avatar Forcing can produce compretitive head avatar videos compared to SOTA methods.</p>
-            <div class="video-carousel" data-carousel="c1">
-                <button class="carousel-btn left" onclick="moveCarousel('c1', -1)">&#10094;</button>
-                <button class="carousel-btn right" onclick="moveCarousel('c1', 1)">&#10095;</button>
-                <div class="video-carousel-track" id="carousel-c1">
-                    <video controls playsinline>
-                        <source src="assets/videos/talking_01.mp4" type="video/mp4">
-                    </video>
-                    <video controls playsinline>
-                        <source src="assets/videos/talking_02.mp4" type="video/mp4">
-                    </video>
+        <!-- Robot Video Comparison Carousel: 2 slides for cosmos and wani2v -->
+        <div class="video-carousel" data-carousel="robot">
+            <button class="carousel-btn left" onclick="moveCarousel('robot', -1)">&#10094;</button>
+            <button class="carousel-btn right" onclick="moveCarousel('robot', 1)">&#10095;</button>
+            <div class="video-carousel-track" id="carousel-robot">
+                <!-- Slide 1: Cosmos -->
+                <div class="motion-compare-slide">
+                    <h4 style="text-align: center; margin-bottom: 10px;">Cosmos-Predict2.5-2B</h4>
+                    <div class="robot-compare-grid-3x3">
+                        <!-- Row 1: Ours -->
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/cosmos/ours/robot_008.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Ours</p>
+                        </div>
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/cosmos/ours/robot_028.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Ours</p>
+                        </div>
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/cosmos/ours/robot_064.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Ours</p>
+                        </div>
+                        <!-- Row 2: Base -->
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/cosmos/base/robot_008.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Base</p>
+                        </div>
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/cosmos/base/robot_028.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Base</p>
+                        </div>
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/cosmos/base/robot_064.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Base</p>
+                        </div>
+                        <!-- Row 3: Rejection Sampling -->
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/cosmos/bon/robot_008.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Rejection Sampling (best-of-4)</p>
+                            <p class="video-prompt">TBD.</p>
+                        </div>
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/cosmos/bon/robot_028.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Rejection Sampling (best-of-4)</p>
+                            <p class="video-prompt">TBD.</p>
+                        </div>
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/cosmos/bon/robot_064.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Rejection Sampling (best-of-4)</p>
+                            <p class="video-prompt">TBD.</p>
+                        </div>
+                    </div>
+                </div>
+                <!-- Slide 2: Wan I2V -->
+                <div class="motion-compare-slide">
+                    <h4 style="text-align: center; margin-bottom: 10px;">Wan2.2-A14B-I2V</h4>
+                    <div class="robot-compare-grid-3x3">
+                        <!-- Row 1: Ours -->
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/wani2v/ours/robot_058.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Ours</p>
+                        </div>
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/wani2v/ours/robot_071.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Ours</p>
+                        </div>
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/wani2v/ours/robot_074.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Ours</p>
+                        </div>
+                        <!-- Row 2: Base -->
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/wani2v/base/robot_058.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Base</p>
+                        </div>
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/wani2v/base/robot_071.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Base</p>
+                        </div>
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/wani2v/base/robot_074.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Base</p>
+                        </div>
+                        <!-- Row 3: Rejection Sampling -->
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/wani2v/bon/robot_058.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Rejection Sampling (best-of-4)</p>
+                            <p class="video-prompt">TBD.</p>
+                        </div>
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/wani2v/bon/robot_071.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Rejection Sampling (best-of-4)</p>
+                            <p class="video-prompt">TBD.</p>
+                        </div>
+                        <div class="robot-video-item">
+                            <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                                <source src="assets/videos/wani2v/bon/robot_074.mp4" type="video/mp4">
+                            </video>
+                            <p class="motion-label">Rejection Sampling (best-of-4)</p>
+                            <p class="video-prompt">TBD.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
-        <h3>Listening Avatar Generation</h3>
-        <p class="carousel-desc"> We compare our method with listening avatar geneartion methods on ViCo. Avatar Forcing can produce compretitive head avatar videos compared to SOTA methods.</p>
-        <div class="video-carousel" data-carousel="c2">
-            <button class="carousel-btn left" onclick="moveCarousel('c2', -1)">&#10094;</button>
-            <button class="carousel-btn right" onclick="moveCarousel('c2', 1)">&#10095;</button>
-            <div class="video-carousel-track" id="carousel-c2">
-                <video controls playsinline>
-                    <source src="assets/videos/listening_01.mp4" type="video/mp4">
+        </div>
+
+
+    </section>
+    <section>
+        <h2>Additional Results</h2>
+        <p>See more results in our paper!
+            <div class="video-grid-three">
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/videos/etc/14.mp4" type="video/mp4">
                 </video>
-                <video controls playsinline>
-                    <source src="assets/videos/listening_02.mp4" type="video/mp4">
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/videos/etc/spatial.mp4" type="video/mp4">
+                </video>
+                <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
+                    <source src="assets/videos/etc/graph_ours.mp4" type="video/mp4">
                 </video>
             </div>
-        </div>
+        </p>
     </section>
-
     <section id="bibtex">
         <h2>Citation</h2>
         <hr>
@@ -851,7 +1355,7 @@ blockquote {
     </section>
     <section>
         <h2>Acknowledgement</h2>
-        <hr> <p>The source images and audio are collected from datasets or generated by Gemini. This page is based on <a href="https://sihyun.me/REPA/">REPA</a>.</p>
+        <hr> <p>This page is based on <a href="https://sihyun.me/REPA/">REPA</a>.</p>
     </section>
 
 </div>
