@@ -842,7 +842,7 @@ blockquote {
     display: block;
 }
 .video-prompt {
-    font-size: 12px;
+    font-size: 16px;
     color: #666;
     margin: 2px 0 8px;
     font-style: italic;
@@ -958,7 +958,7 @@ blockquote {
         <br>
         <blockquote>    
             <p>
-                <b>[TL;DR]</b> We present <b>self-refining</b> video sampling method that reuses a pre-trained video generator as a denoising autoencoder to iteratively refine samples.
+                <b>[TL;DR]</b> We present <b>self-refining video sampling</b> method that reuses a pre-trained video generator as a denoising autoencoder to iteratively refine latents.
                 With ~50% additional NFEs, it improves motion coherence and physical realism <i>without any external verifier, training, or dataset</i>.
             </p>
         </blockquote>
@@ -1002,7 +1002,7 @@ blockquote {
                 </div>
             </p>
             <p>
-                We define a simple refinement iteration, termed <b>Predict-and-Perturb (P&P)</b>, which refines the latent 
+                We define a simple inner-loop refinement iteration, termed <b>Predict-and-Perturb (P&P)</b>, which refines the latent 
                 $k$ times at a fixed noise level $t$. <b>Predict</b> performs self-correction via denoising, while <b>Perturb</b> locally resamples the latent at the same noise level, enabling exploration and mitigating early lock-in during sampling.
             </p>
             
@@ -1310,7 +1310,7 @@ Applied to Cosmos-Predict2.5-2B, it reduces common robotics artifacts such as un
                             </div>
                             <div class="robot-video-item">
                                 <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                    <source src="assets/videos/cosmos/base/robot_028.mp4" type="video/mp4">
+                                    <source src="assets/videos/cosmos/bon/robot_028.mp4" type="video/mp4">
                                 </video>
                             </div>
                             <div class="robot-video-item">
@@ -1328,7 +1328,7 @@ Applied to Cosmos-Predict2.5-2B, it reduces common robotics artifacts such as un
                             </div>
                             <div class="robot-video-item">
                                 <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
-                                    <source src="assets/videos/cosmos/bon/robot_028.mp4" type="video/mp4">
+                                    <source src="assets/videos/cosmos/base/robot_028.mp4" type="video/mp4">
                                 </video>
                             </div>
                             <div class="robot-video-item">
@@ -1339,9 +1339,9 @@ Applied to Cosmos-Predict2.5-2B, it reduces common robotics artifacts such as un
                         </div>
                     </div>
                     <div class="prompt-grid-3">
-                        <p class="video-prompt">Prompt: TBD</p>
-                        <p class="video-prompt">Prompt: TBD</p>
-                        <p class="video-prompt">Prompt: TBD</p>
+                        <p class="video-prompt">... A robotic arm enters the frame from the left, <span style="color:blue;">lifting the spoon</span> smoothly and deliberately. It moves the spoon across the countertop, <span style="color:blue;">placing it down to the right of the pot</span>...</p>
+                        <p class="video-prompt">... As the video progresses, the robotic arm descends towards the metallic bowl, gripping it with its claw-like mechanism. <span style="color:blue;">It lifts the bowl slightly off the surface, rotates it briefly, and then places it down on the blue cloth at the right side.</span> The robotic arm then retracts, moving back to the initial state. The scene concludes with the metallic bowl now positioned on the blue cloth...</p>
+                        <p class="video-prompt">... As the video progresses, the robotic arm on the left lifts the bread off the wicker basket one by one and <span style="color:blue;">places them into the toaster.</span> Simultaneously, <span style="color:red;">the robotic arm on the right pushes the toast lever [Failure]</span> ...</p>
                     </div>
                 </div>
                 <!-- Slide 2: Wan I2V -->
@@ -1404,9 +1404,9 @@ Applied to Cosmos-Predict2.5-2B, it reduces common robotics artifacts such as un
                         </div>
                     </div>
                     <div class="prompt-grid-3">
-                        <p class="video-prompt">Prompt: TBD</p>
-                        <p class="video-prompt">Prompt: TBD</p>
-                        <p class="video-prompt">Prompt: TBD</p>
+                        <p class="video-prompt">... The right robotic arm moves towards the shelf, <span style="color:blue;">picks up a single rectangular box, and places it in the shopping cart</span>...</p>
+                        <p class="video-prompt">... <span style="color:blue;">The robotic arm on the right approaches the red-capped bottle, extending its gripper towards it</span>. Gradually, the gripper closes around the bottle, lifting it slightly off the surface. The other robotic arm remains stationary. By the final frame, the robotic arm has successfully lifted the red-capped bottle, holding it securely in its gripper and <span style="color:blue;">transferring it to the left robotic arm</span>. <span style="color:red;">The scene concludes with the bottle being placed into the teal bowl [Failure]</span>, while the other objects remain in their original positions...</p>
+                        <p class="video-prompt">... A robotic arm with black and metallic components is positioned on the left side of the frame, extending towards the paper bag. The robotic arm then moves closer to the bag, extending its claw-like appendages towards it, indicating an intention to interact with the bag, possibly to pick it up or manipulate it. <span style="color:blue;">The left robotic arm holds the bag steady</span>, while the <span style="color:blue;">right robotic arm places the items into the bag</span>, demonstrating precision and control...</p>
                     </div>
                 </div>
             </div>
