@@ -220,6 +220,9 @@ h1 {
     font-size: 40px;
     font-weight: 500;
 }
+b {
+    font-weight: 800;
+}
 h2 {
     font-weight: 400;
     margin: 16px 0px 4px 0px;
@@ -666,6 +669,55 @@ blockquote {
     height: 80px;
 }
 
+.wrap-figure {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+    flex-wrap: wrap;
+}
+.wrap-figure-text {
+    flex: 1 1 55%;
+    min-width: 280px;
+}
+.wrap-figure-media {
+    flex: 1 1 45%;
+    min-width: 280px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: stretch;
+}
+.wrap-figure-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    width: 100%;
+    padding: 6px 8px;
+    border: 1px solid #9b9b9b;
+    border-radius: 8px;
+}
+.wrap-figure-caption {
+    font-size: 16px;
+    color: #000000;
+    white-space: normal;
+    order: 1;
+    text-align: left;
+    flex: 1 1 auto;
+}
+.wrap-figure-media figure {
+    margin: 0;
+    order: 2;
+    flex: 0 0 auto;
+}
+.wrap-figure-media img {
+    height: 90px;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    object-fit: contain;
+}
+
 .video-grid-three {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -992,52 +1044,62 @@ blockquote {
             
                 for which the model learns to denoise the corrupted input $z_t$ back to the clean sample $z_1$. 
             </p>
-            <p> 
-                Thus, flow matching can be viewed as training a time-conditioned DAE. 
-                At inference time, we repurpose the pre-trained model as DAE, <i>self-refiner</i>, iteratively refining samples toward the data manifold.
-                <div class="side-by-side equation-compare pnp-compare">
-                    <figure>
-                        <img src="assets/items/pnp.png" alt="PnP iteration">
-                    </figure>
-                    <figure>
-                        <img src="assets/items/pnp-2.png" alt="PnP multiple">
-                    </figure>
+            <div class="wrap-figure">
+                <div class="wrap-figure-text">
+                    <p>
+                        Thus, flow matching can be viewed as training a time-conditioned DAE.
+                        At inference time, we repurpose the pre-trained model as DAE, <i>self-refiner</i>, iteratively refining samples toward the data manifold.
+                    </p>
                 </div>
-            </p>
-            <p>
-                We define a simple inner-loop refinement iteration, termed <b>Predict-and-Perturb (P&P)</b>, which refines the latent 
-                $k$ times at a fixed noise level $t$. <b>Predict</b> performs self-correction via denoising, while <b>Perturb</b> locally resamples the latent at the same noise level, enabling exploration and mitigating early lock-in during sampling.
-            </p>
+                <div class="wrap-figure-media">
+                    <div class="wrap-figure-item">
+                        <figure>
+                            <img src="assets/items/pnp.png" alt="PnP iteration">
+                        </figure>
+                        <span class="wrap-figure-caption">From a DAE perspective, <b>Predict</b> acts as a denoiser that maps a noisy state $z_t$ toward a clean sample, while <b>Perturb</b> injects noise by interpolating with Gaussian noise at level $t$.<br>Together, they form a simple corrupt–reconstruct loop for DAE-style refinement.</span>
+                    </div>
+                    <div class="wrap-figure-item">
+                        <figure>
+                            <img src="assets/items/pnp-2.png" alt="PnP multiple">
+                        </figure>
+                        <span class="wrap-figure-caption">At a fixed noise level $t$, we iteratively apply them to refine $z_t$, an operation we call <b>Predict-and-Perturb (P&P)</b>. Repeating this process for a few iterations $k$ gradually steers samples toward higher density regions (i.e., data manifold).</span>
+                    </div>
+                </div>
+            </div>
+        
+        <br><br>
+        <!-- <h3>Self-Refining Video Sampling</h3> -->
+
+        <div class="side-by-side">
+            <figure>
+                <img src="assets/items/figure_1_concept.png" alt="Figure a">
+                <figcaption class="caption"><b>Concept of the self-refining video sampling.</b> Within the same noise level, the video latent $z_t$ is refined as the predicted endpoint $\hat{z}_1$ is pulled toward the data manifold. </figcaption>
+            </figure>
+            <figure>
+                <img src="assets/items/figure_2.png" alt="Figure b">
+                <figcaption class="caption"><b>Sampling comparison on 2D synthetic dataset.</b> <b>(a-b)</b> P&P generates samples closer to the data manifold compared to the Euler solver. <b>(c-d)</b> When fixing the timestep, iterative P&P pulls the prediction $\hat{z}_1$ closer to the data manifold</figcaption>
+            </figure>
+        </div>
+        <!-- <p> 
+            Mirroring the corrupt-reconstruct structure of a DAE, P&P performs an inner-loop refinement at each noise level, progressively pulling the latent toward <b>higher-density regions of the learned video distribution</b>. This refinement promotes temporally coherent and physically plausible videos. As illustrated by the 2D toy experiment, P&P generates samples that lie closer to the data manifold.
+        </p> -->
+        <p>
+            In practice, only 2–3 iterations are sufficient to improve temporal coherence and physical plausibility. The refined state $z_t^*:= z^{(K)}_{t}$ is then used as the updated state and passed to the next ODE step, enabling plug-and-play integration with existing solvers by simply replacing $z_t$ with $z_t^*$.
+        </p>
             
             <p>
+            <br>
             [1] Vincent Pascal, A Connection Between Score Matching and Denoising Autoencoders, Neural computation, 2011
             <br>
             [2] Song & Ermon, Generative Modeling by Estimating Gradients of the Data Distribution, NeurIPS, 2019
             <br>
             [3] Bengio et al., Generalized Denoising Auto-encoders as Generative Models, NeurIPS, 2013
-            </p>
-        
-        <br><br>
-        <!-- <h3>Self-Refining Video Sampling</h3> -->
-
-            <div class="side-by-side">
-                <figure>
-                    <img src="assets/items/figure_1_concept.png" alt="Figure a">
-                    <figcaption class="caption"><b>Concept of the self-refining video sampling.</b> Within the same noise level, the video latent $z_t$ is refined as the predicted endpoint $\hat{z}_1$ is pulled toward the data manifold. </figcaption>
-                </figure>
-                <figure>
-                    <img src="assets/items/figure_2.png" alt="Figure b">
-                    <figcaption class="caption"><b>Sampling comparison on 2D synthetic dataset.</b> <b>(a-b)</b> P&P generates samples closer to the data manifold compared to the Euler solver. <b>(c-d)</b> When fixing the timestep, iterative P&P pulls the prediction $\hat{z}_1$ closer to the data manifold</figcaption>
-                </figure>
-            </div>
-        <p> 
-            Mirroring the corrupt-reconstruct structure of a DAE, P&P performs an inner-loop refinement at each noise level, progressively pulling the latent toward <b>higher-density regions of the learned video distribution</b>. This refinement promotes temporally coherent and physically plausible videos. As illustrated by the 2D toy experiment, P&P generates samples that lie closer to the data manifold.
         </p>
 
-        <br><br>
+        <br>
         <h3>Uncertainty-aware P&P</h3>
         <p>
-            However, we observe that applying multiple P&P updates ($K \geq 3$) to videos, together with classifier-free guidance (CFG), can lead to over-saturation or simplification in static regions such as the background.
+            However, we observe that multiple P&P updates ($K \geq 3$) to videos with classifier-free guidance (CFG) can lead to over-saturation or simplification in static regions such as the background.
             To address this, we propose an <b>uncertainty-aware P&P</b> that selectively refines only the locally uncertain regions.
             Specifically, we estimate the model confidence using the prediction discrepancy, $\mathbf{U}=\|\hat{z}_1^{(k)}-\hat{z}_1^{(k+1)}\|_1,$ which measures how sensitive the prediction is to the Perturb step.
 
