@@ -22,7 +22,7 @@ This repo is organized into two main branches:
 
 ```
 self-refine-video
-├─ (current)        : Wan Series (P&P refinement schedule)
+├─ (current)        : Wan Series (Based on Diffusers)
 └─ cosmos2.5-predict: Cosmos 2.5 predict code
 ```
 
