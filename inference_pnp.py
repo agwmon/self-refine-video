@@ -7,7 +7,7 @@ from diffusers.utils import export_to_video
 from functions.pipeline_wan_pnp import WanPipeline
 
 
-MODEL_ID = "Wan2.2-T2V-A14B-Diffusers"
+MODEL_ID = "/mnt/parallel_storage/sjhwang_lab/dkkim/Physics/Wan2.2-T2V-A14B-Diffusers"
 DTYPE = torch.bfloat16
 VAE_DTYPE = torch.float32
 DEVICE = "cuda"
@@ -18,13 +18,10 @@ PROMPT = (
 )
 # Base negative prompt in Wan2.2 (https://github.com/Wan-Video/Wan2.2)
 NEGATIVE_PROMPT = (
-    "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，"
-    "最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，"
-    "画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，"
-    "杂乱的背景，三条腿，背景人很多，倒着走"
+    "low quality"
 )
 
-SEED = 50
+SEED = 0
 SAVE_DIR = "output/test"
 
 HEIGHT, WIDTH = 480, 832
@@ -35,10 +32,10 @@ NUM_INFERENCE_STEPS = 40
 FPS = 16
 
 # Hyperparameters for P&P.
-# List format: [(2, 5, 3), (6, 14, 1)] is also allowed.
+# List format: [(2, 5, 3), (6, 13, 1)] is also allowed.
 STOCHASTIC_PLAN = [
     {"start": 2, "end": 5, "steps": 3},
-    {"start": 6, "end": 14, "steps": 1},
+    {"start": 6, "end": 13, "steps": 1},
 ]
 
 # Threshold for uncertainty to determine certain and uncertain regions.
@@ -46,6 +43,44 @@ STOCHASTIC_PLAN = [
 THS_UNCERTAINTY = 0.25
 P_NORM = 1
 CERTAIN_PERCENTAGE = 0.999  # If certain area percentage is larger, skip P&P iterations.
+
+
+def _build_stochastic_step_map(plan):
+    step_map = {}
+    if not plan:
+        return step_map
+    for entry in plan:
+        if isinstance(entry, dict):
+            start = entry.get("start", entry.get("begin"))
+            end = entry.get("end", entry.get("stop"))
+            steps = entry.get("steps", entry.get("anneal", entry.get("num_anneal_steps", 1)))
+            if start is None or end is None:
+                raise ValueError("stochastic_plan dict entries must contain 'start' and 'end' keys.")
+        else:
+            if len(entry) != 3:
+                raise ValueError("Tuple entries in stochastic_plan must be of the form (start, end, num_anneal_steps).")
+            start, end, steps = entry
+
+        start_i = int(start)
+        end_i = int(end)
+        steps_i = int(steps)
+        if start_i < 0 or end_i < 0:
+            raise ValueError("stochastic_plan indices must be non-negative.")
+        if end_i < start_i:
+            raise ValueError(f"stochastic_plan end ({end_i}) must be >= start ({start_i}).")
+        if steps_i < 1:
+            continue
+
+        for idx in range(start_i, end_i + 1):
+            step_map[idx] = steps_i
+
+    return step_map
+
+
+def _compute_total_nfe(num_inference_steps, stochastic_plan):
+    step_map = _build_stochastic_step_map(stochastic_plan)
+    extra = sum(step_map.get(i, 0) for i in range(num_inference_steps))
+    return num_inference_steps + extra
 
 
 def build_pipeline() -> WanPipeline:
@@ -60,6 +95,9 @@ def build_pipeline() -> WanPipeline:
 
 def main() -> None:
     os.makedirs(SAVE_DIR, exist_ok=True)
+
+    total_nfe = _compute_total_nfe(NUM_INFERENCE_STEPS, STOCHASTIC_PLAN)
+    print(f"Total NFE: {total_nfe} (base {NUM_INFERENCE_STEPS} + extra {total_nfe - NUM_INFERENCE_STEPS})")
 
     pipe = build_pipeline()
     output = pipe(

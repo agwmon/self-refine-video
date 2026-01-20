@@ -1,0 +1,12 @@
+# Output artifacts
+output/
+
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Logs
+*.log
+
+# OS files
+.DS_Store

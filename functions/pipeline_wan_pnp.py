@@ -13,6 +13,7 @@
 # limitations under the License.
 
 import html
+from contextlib import nullcontext
 from typing import Any, Callable, Dict, List, Optional, Union, Tuple
 
 import regex as re
@@ -671,66 +672,72 @@ class WanPipeline(DiffusionPipeline, WanLoraLoaderMixin):
                 certain_mask = None
                 certain_flag = False
 
-                for ii in range(m):
-                    if certain_flag:
-                        latents = buffer[-1][2]
-                        break
+                stoch_bar_context = self.progress_bar(total=current_num_anneal_steps) if in_stoch else nullcontext()
+                with stoch_bar_context as stoch_bar:
+                    for ii in range(m):
+                        if certain_flag:
+                            latents = buffer[-1][2]
+                            break
 
-                    if ii == 0: # first prediction step
-                        latent_model_input = latents.to(transformer_dtype)
-                    else: # Perturbation step in Eq. 6 of the paper
-                        noise = randn_tensor(latents.shape, generator=generator, device=device, dtype=latents.dtype)
-                        latents = (1.0 - sigma) * buffer[-1][1] + sigma * noise
-                        latent_model_input = latents.to(transformer_dtype)
+                        if ii == 0: # first prediction step
+                            latent_model_input = latents.to(transformer_dtype)
+                        else: # Perturbation step in Eq. 6 of the paper
+                            noise = randn_tensor(latents.shape, generator=generator, device=device, dtype=latents.dtype)
+                            latents = (1.0 - sigma) * buffer[-1][1] + sigma * noise
+                            latent_model_input = latents.to(transformer_dtype)
 
-                    with current_model.cache_context("cond"):
-                        noise_pred = current_model(
-                            hidden_states=latent_model_input,
-                            timestep=timestep,
-                            encoder_hidden_states=prompt_embeds,
-                            attention_kwargs=attention_kwargs,
-                            return_dict=False,
-                        )[0]
-
-                    if self.do_classifier_free_guidance:
-                        with current_model.cache_context("uncond"):
-                            noise_uncond = current_model(
+                        with current_model.cache_context("cond"):
+                            noise_pred = current_model(
                                 hidden_states=latent_model_input,
                                 timestep=timestep,
-                                encoder_hidden_states=negative_prompt_embeds,
+                                encoder_hidden_states=prompt_embeds,
                                 attention_kwargs=attention_kwargs,
                                 return_dict=False,
                             )[0]
-                        noise_pred = noise_uncond + current_guidance_scale * (noise_pred - noise_uncond)
 
-                    # Predict the original sample (Predict step in Eq. 5 of the paper)
-                    pred_original_sample = latents - sigma * noise_pred
-                    latents_next = latents + (sigma_next - sigma) * noise_pred
+                        if self.do_classifier_free_guidance:
+                            with current_model.cache_context("uncond"):
+                                noise_uncond = current_model(
+                                    hidden_states=latent_model_input,
+                                    timestep=timestep,
+                                    encoder_hidden_states=negative_prompt_embeds,
+                                    attention_kwargs=attention_kwargs,
+                                    return_dict=False,
+                                )[0]
+                            noise_pred = noise_uncond + current_guidance_scale * (noise_pred - noise_uncond)
 
-                    if in_stoch: # stochastic sampling
-                        if buffer[-1] is not None: # if buffer is not empty
-                            uncertainty = torch.norm(pred_original_sample - buffer[-1][1], p=p_norm, dim=1) / self.vae.config.z_dim # b, f, h, w
-                            certain_mask = uncertainty < ths_uncertainty # certain region, e.g., background
-                            if buffer[-1][0] is not None:
-                                certain_mask = certain_mask | buffer[-1][0] # update certain mask (union)
-                            # if the certain region is more than this percentage, set certain_flag to True
-                            if certain_mask.sum() / certain_mask.numel() > certain_percentage:
-                                certain_flag = True
-                                progress_bar.write(
-                                    f"{ii}/{current_num_anneal_steps}: Certain region is more than {certain_percentage}, set certain_flag to True"
-                                )
-                            certain_mask_float = certain_mask.to(latents.dtype)
-                            latents_next = certain_mask_float * buffer[-1][2] + (1.0 - certain_mask_float) * latents_next
-                            pred_original_sample = certain_mask_float * buffer[-1][1] + (1.0 - certain_mask_float) * pred_original_sample
-                        buffer.append([certain_mask, pred_original_sample, latents_next]) 
+                        # Predict the original sample (Predict step in Eq. 5 of the paper)
+                        pred_original_sample = latents - sigma * noise_pred
+                        latents_next = latents + (sigma_next - sigma) * noise_pred
 
-                        if ii == m - 1: # finish the last step in P&P iterations
-                            latents = buffer[-1][2]
+                        if in_stoch: # stochastic sampling
+                            if buffer[-1] is not None: # if buffer is not empty
+                                uncertainty = torch.norm(pred_original_sample - buffer[-1][1], p=p_norm, dim=1) / self.vae.config.z_dim # b, f, h, w
+                                certain_mask = uncertainty < ths_uncertainty # certain region, e.g., background
+                                if buffer[-1][0] is not None:
+                                    certain_mask = certain_mask | buffer[-1][0] # update certain mask (union)
+                                # if the certain region is more than this percentage, set certain_flag to True
+                                if certain_mask.sum() / certain_mask.numel() > certain_percentage:
+                                    certain_flag = True
+                                    progress_bar.write(
+                                        f"{ii}/{current_num_anneal_steps}: Certain region is more than {certain_percentage}, set certain_flag to True"
+                                    )
+                                certain_mask_float = certain_mask.to(latents.dtype)
+                                latents_next = certain_mask_float * buffer[-1][2] + (1.0 - certain_mask_float) * latents_next
+                                pred_original_sample = certain_mask_float * buffer[-1][1] + (1.0 - certain_mask_float) * pred_original_sample
+                            buffer.append([certain_mask, pred_original_sample, latents_next]) 
 
-                    else: # base ODE step
-                        latents = latents_next                    
+                            if ii == m - 1: # finish the last step in P&P iterations
+                                latents = buffer[-1][2]
 
+                        else: # base ODE step
+                            latents = latents_next
 
+                        if in_stoch and ii > 0 and stoch_bar is not None:
+                            stoch_bar.update()
+
+                scheduler._step_index += 1
+                
                 if callback_on_step_end is not None:
                     callback_kwargs = {}
                     for k in callback_on_step_end_tensor_inputs:
