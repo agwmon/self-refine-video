@@ -1,6 +1,3 @@
-# Output artifacts
-output/
-
 # Python cache
 __pycache__/
 *.py[cod]

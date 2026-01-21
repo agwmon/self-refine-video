@@ -94,7 +94,7 @@ def prompt_clean(text):
     return text
 
 
-class WanPipeline(DiffusionPipeline, WanLoraLoaderMixin):
+class WanPnPPipeline(DiffusionPipeline, WanLoraLoaderMixin):
     r"""
     Pipeline for text-to-video generation using Wan.
 

@@ -1,13 +1,14 @@
+from importlib import metadata
 import os
 
 import torch
 from diffusers import AutoencoderKLWan
 from diffusers.utils import export_to_video
+import json
+from functions.pipeline_wan_pnp import WanPnPPipeline
 
-from functions.pipeline_wan_pnp import WanPipeline
 
-
-MODEL_ID = "/mnt/parallel_storage/sjhwang_lab/dkkim/Physics/Wan2.2-T2V-A14B-Diffusers"
+MODEL_ID = "Wan-AI/Wan2.2-T2V-A14B-Diffusers"
 DTYPE = torch.bfloat16
 VAE_DTYPE = torch.float32
 DEVICE = "cuda"
@@ -39,11 +40,10 @@ STOCHASTIC_PLAN = [
 ]
 
 # Threshold for uncertainty to determine certain and uncertain regions.
-# Lower values increase refinement strength, but may introduce artifacts.
-THS_UNCERTAINTY = 0.25
-P_NORM = 1
+# Lower values increase refinement strength, but may introduce artifacts (difference in color tone).
+THS_UNCERTAINTY = 0.2
+P_NORM = 1 # Fix
 CERTAIN_PERCENTAGE = 0.999  # If certain area percentage is larger, skip P&P iterations.
-
 
 def _build_stochastic_step_map(plan):
     step_map = {}
@@ -83,15 +83,14 @@ def _compute_total_nfe(num_inference_steps, stochastic_plan):
     return num_inference_steps + extra
 
 
-def build_pipeline() -> WanPipeline:
+def build_pipeline() -> WanPnPPipeline:
     vae = AutoencoderKLWan.from_pretrained(
         MODEL_ID,
         subfolder="vae",
         torch_dtype=VAE_DTYPE,
     )
-    pipe = WanPipeline.from_pretrained(MODEL_ID, vae=vae, torch_dtype=DTYPE)
+    pipe = WanPnPPipeline.from_pretrained(MODEL_ID, vae=vae, torch_dtype=DTYPE)
     return pipe.to(DEVICE)
-
 
 def main() -> None:
     os.makedirs(SAVE_DIR, exist_ok=True)
@@ -100,6 +99,25 @@ def main() -> None:
     print(f"Total NFE: {total_nfe} (base {NUM_INFERENCE_STEPS} + extra {total_nfe - NUM_INFERENCE_STEPS})")
 
     pipe = build_pipeline()
+
+    metadata = {
+        "prompt": PROMPT,
+        "negative_prompt": NEGATIVE_PROMPT,
+        "height": HEIGHT,
+        "width": WIDTH,
+        "num_frames": NUM_FRAMES,
+        "guidance_scale": GUIDANCE_SCALE,
+        "guidance_scale_2": GUIDANCE_SCALE_2,
+        "num_inference_steps": NUM_INFERENCE_STEPS,
+        "stochastic_plan": STOCHASTIC_PLAN,
+        "ths_uncertainty": THS_UNCERTAINTY,
+        "p_norm": P_NORM,
+        "certain_percentage": CERTAIN_PERCENTAGE,
+    }
+
+    with open(os.path.join(SAVE_DIR, "metadata.json"), "w") as f:
+        json.dump(metadata, f, indent=4)
+
     output = pipe(
         stochastic_plan=STOCHASTIC_PLAN,
         prompt=PROMPT,
@@ -116,7 +134,35 @@ def main() -> None:
         certain_percentage=CERTAIN_PERCENTAGE,
     ).frames[0]
 
-    export_to_video(output, f"{SAVE_DIR}/output.mp4", fps=FPS)
+    export_to_video(output, f"{SAVE_DIR}/output_pnp.mp4", fps=FPS)
+
+    ########## Comparison with Base Wan ##########
+    # from diffusers import WanPipeline
+    # pipe_base = WanPipeline.from_pretrained(MODEL_ID, 
+    #                                         vae=pipe.vae,
+    #                                         text_encoder=pipe.text_encoder,
+    #                                         tokenizer=pipe.tokenizer,
+    #                                         transformer=pipe.transformer,
+    #                                         scheduler=pipe.scheduler,
+    #                                         transformer_2=pipe.transformer_2)
+                                        
+    # output = pipe_base(
+    #     prompt=PROMPT,
+    #     negative_prompt=NEGATIVE_PROMPT,
+    #     height=HEIGHT,
+    #     width=WIDTH,
+    #     num_frames=NUM_FRAMES,
+    #     guidance_scale=GUIDANCE_SCALE,
+    #     guidance_scale_2=GUIDANCE_SCALE_2,
+    #     num_inference_steps=NUM_INFERENCE_STEPS,
+    #     generator=torch.Generator(device=DEVICE).manual_seed(SEED),
+    # ).frames[0]
+
+    # export_to_video(output, f"{SAVE_DIR}/output_base.mp4", fps=FPS)
+    #######################################
+                                            
+
+
 
 
 if __name__ == "__main__":

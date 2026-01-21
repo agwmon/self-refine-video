@@ -125,7 +125,7 @@ def retrieve_latents(
         raise AttributeError("Could not access latents of provided encoder_output")
 
 
-class WanImageToVideoPipeline(DiffusionPipeline, WanLoraLoaderMixin):
+class WanImageToVideoPnPPipeline(DiffusionPipeline, WanLoraLoaderMixin):
     r"""
     Pipeline for image-to-video generation using Wan.
 

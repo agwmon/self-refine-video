@@ -1,0 +1,25 @@
+{
+    "prompt": "A gymnast on a pommel horse swings their legs in wide circles (flares), supporting their entire weight on alternating hands.",
+    "negative_prompt": "low quality",
+    "height": 480,
+    "width": 832,
+    "num_frames": 81,
+    "guidance_scale": 4,
+    "guidance_scale_2": 3,
+    "num_inference_steps": 40,
+    "stochastic_plan": [
+        {
+            "start": 2,
+            "end": 5,
+            "steps": 3
+        },
+        {
+            "start": 6,
+            "end": 13,
+            "steps": 1
+        }
+    ],
+    "ths_uncertainty": 0.2,
+    "p_norm": 1,
+    "certain_percentage": 0.999
+}
