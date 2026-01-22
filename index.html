@@ -183,7 +183,7 @@ document.addEventListener("DOMContentLoaded", () => {
 /* Base scale factor - adjust this single value to scale everything */
 :root {
     --base-font-size: 16px;
-    --scale: 1;
+    --scale: 1.1;
     /* Derived sizes */
     --text-xs: calc(0.75rem * var(--scale));
     --text-sm: calc(0.875rem * var(--scale));
@@ -356,6 +356,7 @@ p {
     color: #666;
     margin-top: var(--space-xs);
     margin-bottom: var(--space-sm);
+    text-align: left;
 }
 
 video {
@@ -584,6 +585,9 @@ blockquote {
     border-radius: var(--space-sm);
     padding: var(--space-xs) var(--space-sm);
     font-size: var(--text-xl);
+}
+.tldr-blockquote {
+    font-size: calc(var(--text-xl) * 1.15);
 }
 
 .video-carousel {
@@ -1188,10 +1192,10 @@ blockquote {
                 </video>
         </div>
         <br>
-        <blockquote>    
+        <blockquote class="tldr-blockquote">    
             <p>
                 <b>[TL;DR]</b> We present <b>self-refining video sampling</b> method that reuses a pre-trained video generator as a denoising autoencoder to iteratively refine latents.
-                With ~50% additional NFEs, it improves motion coherence and physical realism <i>without any external verifier, training, or dataset</i>.
+                With ~50% additional NFEs, it improves physical realism (e.g., motion coherence and physics alignment) <i>without any external verifier, training, or dataset</i>.
             </p>
         </blockquote>
     </div>
@@ -1224,7 +1228,7 @@ blockquote {
             <div class="wrap-figure">
                 <div class="wrap-figure-text">
                     <p>
-                        Thus, flow matching can be viewed as training a time-conditioned DAE.
+                        Thus, flow matching trained model can be used as a time-conditioned DAE.
                         At inference time, we repurpose the pre-trained model as DAE, <i>self-refiner</i>, iteratively refining samples toward the data manifold.
                     </p>
                 </div>
@@ -1233,13 +1237,13 @@ blockquote {
                         <figure>
                             <img src="assets/items/pnp.png" alt="PnP iteration">
                         </figure>
-                        <span class="wrap-figure-caption">From a DAE perspective, <b>Predict</b> acts as a denoiser that maps a noisy state $z_t$ toward a clean sample, while <b>Perturb</b> injects noise by interpolating with Gaussian noise at level $t$.<br>Together, they form a simple corrupt–reconstruct loop for DAE-style refinement.</span>
+                        <span class="wrap-figure-caption">From a DAE perspective, <b>Predict</b> acts as a denoiser that maps a noisy state $z_t$ toward a clean sample, while <b>Perturb</b> injects noise by interpolating with Gaussian noise at level $t$. Together, they form a simple corrupt–reconstruct loop for DAE-style refinement.</span>
                     </div>
                     <div class="wrap-figure-item">
                         <figure>
-                            <img src="assets/items/pnp-2.png" alt="PnP multiple">
+                            <img src="assets/items/pnp-3.png" alt="PnP multiple">
                         </figure>
-                        <span class="wrap-figure-caption">At a fixed noise level $t$, we iteratively apply them to refine $z_t$, an operation we call <b>Predict-and-Perturb (P&P)</b>. Repeating this process for a few iterations $k$ gradually steers samples toward higher density regions (i.e., data manifold).</span>
+                        <span class="wrap-figure-caption">At a fixed noise level $t$, we iteratively apply them to refine $z_t$, an operation we call <b>Predict-and-Perturb (P&P)</b>. Repeating this process for a few iterations $k$ gradually steers latents toward higher density regions (i.e., data manifold).</span>
                     </div>
                 </div>
             </div>
@@ -1276,9 +1280,9 @@ blockquote {
         <br>
         <h3>Uncertainty-aware Predict-and-Perturb</h3>
         <p>
-            However, we observe that multiple P&P updates ($K \geq 3$) to videos with classifier-free guidance (CFG) can lead to over-saturation or simplification in static regions such as the background.
-            To address this, we propose an <b>uncertainty-aware P&P</b> that selectively refines only the locally uncertain regions.
-            Specifically, we estimate the model confidence using the prediction discrepancy, $\mathbf{U}=\|\hat{z}_1^{(k)}-\hat{z}_1^{(k+1)}\|_1,$ which measures how sensitive the prediction is to the Perturb step.
+            However, we observe that multiple P&P updates ($K \geq 3$) with classifier-free guidance can lead to over-saturation or simplification in static regions such as the background.
+            To address this, we propose an <b>Uncertainty-aware P&P</b> that selectively refines only the locally uncertain regions.
+            Specifically, we estimate the model confidence of the prediction, $\mathbf{U}=\|\hat{z}_1^{(k)}-\hat{z}_1^{(k+1)}\|_1,$ which measures how sensitive the prediction is to the Perturb step.
 
             <div class="video-grid-three">
                 <video controls playsinline loop muted autoplay data-autoplay-inline="true" data-concurrent="true">
@@ -1293,7 +1297,7 @@ blockquote {
             </div>
             <br>
             Here, we apply the P&P update only to regions where the uncertainty $\mathbf{U}$ exceeds a predefined threshold $\tau$.
-            Notably, it does not require any additional model evaluations (NFE) since both predictions are already computed during the P&P process. Please refer to the paper for more details.
+            Notably, it <b><i>does not require any additional model evaluations</i></b> (NFE) since both predictions are already computed during the P&P process. Please refer to the paper for more details.
         </p>
         
 
