@@ -1,0 +1,24 @@
+{
+    "prompt": "The video opens with a close-up shot of two robotic arms positioned on either side of a metallic refrigerator in a clean, modern indoor setting, likely a laboratory or testing facility. Both arms are visible, showcasing their intricate black, silver, and white components, with cylindrical attachments. The refrigerator has a sleek, silver finish with a slightly reflective surface, situated against a corner of a white wall. A small section of a stainless steel sink is visible on the left side of the frame, indicating proximity to a kitchen or utility area. The floor beneath the refrigerator is covered with light-colored tiles, and a faint yellow line marking is noticeable near the bottom right corner of the image. Several people's legs are visible on the floor towards the right side while walking.  The left robotic arm opens the refrigerator's door, revealing its contents. It then retrieves a cold drink bottle and places it on the counter beside the refrigerator. Simultaneously, the right robotic arm gently pushes the refrigerator door closed. The scene remains consistent, focusing on the interaction between the robotic arms and the refrigerator without introducing any new objects. The video captures the precision and efficiency of the robotic arms in a controlled, modern environment.",
+    "negative_prompt": "low quality",
+    "height": 480,
+    "width": 832,
+    "num_frames": 81,
+    "guidance_scale": 3.5,
+    "num_inference_steps": 40,
+    "stochastic_plan": [
+        {
+            "start": 1,
+            "end": 5,
+            "steps": 3
+        },
+        {
+            "start": 6,
+            "end": 13,
+            "steps": 1
+        }
+    ],
+    "ths_uncertainty": 0.0,
+    "p_norm": 1,
+    "certain_percentage": 0.999
+}

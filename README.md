@@ -42,9 +42,14 @@ Minimum dependencies (install in your environment):
 
 ## Usage
 
-Edit prompts and hyperparameters in [inference_pnp.py](inference_pnp.py), then run the script.
+Edit prompts and hyperparameters in [inference_pnp.py](inference_pnp.py) (T2V) or [inference_i2v_pnp.py](inference_i2v_pnp.py) (I2V), then run the script.
 
 ## Bibtex
 ```
 TBD.
 ```
+
+## 🙏 Acknowledgements
+This work builds upon:
+* Diffusers - [Wan pipeline](https://github.com/huggingface/diffusers/tree/main/src/diffusers/pipelines/wan)
+* Cosmos2.5 - [Github](https://github.com/nvidia-cosmos/cosmos-predict2.5)

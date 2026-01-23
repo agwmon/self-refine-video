@@ -844,11 +844,11 @@ class WanImageToVideoPnPPipeline(DiffusionPipeline, WanLoraLoaderMixin):
                             break       
 
                         if ii == 0: # first prediction step
-                            latent_model_input = latents.to(transformer_dtype)
-                        else: # Perturbation step in Eq. 6 of the paper
+                            latent_model_input = torch.cat([latents, condition], dim=1).to(transformer_dtype)
+                        else: # perturbed lookahead step
                             noise = randn_tensor(latents.shape, generator=generator, device=device, dtype=latents.dtype)
                             latents = (1.0 - sigma) * buffer[-1][1] + sigma * noise
-                            latent_model_input = latents.to(transformer_dtype)                                 
+                            latent_model_input = torch.cat([latents, condition], dim=1).to(transformer_dtype)                               
 
                         with current_model.cache_context("cond"):
                             noise_pred = current_model(
