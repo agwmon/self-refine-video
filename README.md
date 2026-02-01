@@ -32,6 +32,8 @@ self-refine-video
 
 ## Dependencies
 
+> 2026.02.01: 🚨 There is a Wan model loading error with `transformers==5.0.0`. Please use `transformers==4.57.3` until this issue is fixed.
+
 Follow the model card for environment details:
 - https://huggingface.co/Wan-AI/Wan2.2-T2V-A14B-Diffusers
 
