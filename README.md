@@ -41,6 +41,7 @@ Minimum dependencies (install in your environment):
 - diffusers
 - transformers
 - torch
+- pip install opencv-python imageio imageio-ffmpeg
 
 ## Usage
 
