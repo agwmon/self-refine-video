@@ -175,7 +175,143 @@ document.addEventListener("DOMContentLoaded", () => {
             setActiveVideo(target);
         }
     }, true);
+
+    // Initialize video zoom lens
+    initializeVideoZoom();
 });
+
+function initializeVideoZoom() {
+    // Create zoom lens element
+    const zoomLens = document.createElement('div');
+    zoomLens.className = 'video-zoom-lens';
+    const canvas = document.createElement('canvas');
+    zoomLens.appendChild(canvas);
+    document.body.appendChild(zoomLens);
+
+    const ctx = canvas.getContext('2d');
+    const lensSize = 300;
+    canvas.width = lensSize;
+    canvas.height = lensSize;
+
+    const zoomFactor = 1.4;
+    let currentVideo = null;
+    let animationFrameId = null;
+    let lastMouseEvent = null;
+
+    function showZoomLens(video, e) {
+        currentVideo = video;
+        lastMouseEvent = e;
+        positionZoomLens(e);
+        zoomLens.classList.add('visible');
+        if (!animationFrameId) {
+            animationFrameId = requestAnimationFrame(drawZoom);
+        }
+    }
+
+    function hideZoomLens() {
+        zoomLens.classList.remove('visible');
+        currentVideo = null;
+        if (animationFrameId) {
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        }
+    }
+
+    function positionZoomLens(e) {
+        const offsetX = 15;
+        const cursorX = e.clientX;
+        const cursorY = e.clientY;
+        let posX = cursorX + offsetX;
+        let posY = cursorY - Math.round(lensSize / 2);
+
+        const windowWidth = window.innerWidth;
+        const windowHeight = window.innerHeight;
+
+        if (posX + lensSize > windowWidth - 20) {
+            posX = cursorX - lensSize - offsetX;
+        }
+        if (posY < 20) {
+            posY = 20;
+        } else if (posY + lensSize > windowHeight - 20) {
+            posY = windowHeight - lensSize - 20;
+        }
+
+        zoomLens.style.left = posX + 'px';
+        zoomLens.style.top = posY + 'px';
+    }
+
+    function drawZoom() {
+        if (!currentVideo || !lastMouseEvent) {
+            animationFrameId = null;
+            return;
+        }
+
+        const videoRect = currentVideo.getBoundingClientRect();
+        const videoWidth = currentVideo.videoWidth;
+        const videoHeight = currentVideo.videoHeight;
+
+        if (videoWidth === 0 || videoHeight === 0) {
+            animationFrameId = requestAnimationFrame(drawZoom);
+            return;
+        }
+
+        const mouseX = lastMouseEvent.clientX - videoRect.left;
+        const mouseY = lastMouseEvent.clientY - videoRect.top;
+
+        const scaleX = videoWidth / videoRect.width;
+        const scaleY = videoHeight / videoRect.height;
+
+        const videoMouseX = mouseX * scaleX;
+        const videoMouseY = mouseY * scaleY;
+
+        const zoomRegionWidth = lensSize / zoomFactor;
+        const zoomRegionHeight = lensSize / zoomFactor;
+
+        let sourceX = videoMouseX - zoomRegionWidth / 2;
+        let sourceY = videoMouseY - zoomRegionHeight / 2;
+
+        sourceX = Math.max(0, Math.min(sourceX, videoWidth - zoomRegionWidth));
+        sourceY = Math.max(0, Math.min(sourceY, videoHeight - zoomRegionHeight));
+
+        ctx.clearRect(0, 0, lensSize, lensSize);
+        try {
+            ctx.drawImage(
+                currentVideo,
+                sourceX, sourceY, zoomRegionWidth, zoomRegionHeight,
+                0, 0, lensSize, lensSize
+            );
+        } catch (err) {
+            // Video might not be ready yet
+        }
+
+        animationFrameId = requestAnimationFrame(drawZoom);
+    }
+
+    // Attach to all videos in comparison grids
+    const targetSelectors = [
+        '.motion-compare-grid-4x3 video',
+        '.robot-compare-grid-3x3 video',
+        '.video-grid-three video',
+        '.video-grid-two video'
+    ];
+
+    const comparisonVideos = document.querySelectorAll(targetSelectors.join(', '));
+
+    comparisonVideos.forEach(video => {
+        video.addEventListener('mouseenter', function(e) {
+            showZoomLens(this, e);
+        });
+        video.addEventListener('mousemove', function(e) {
+            if (currentVideo === this) {
+                lastMouseEvent = e;
+                positionZoomLens(e);
+            }
+        });
+        video.addEventListener('mouseleave', function() {
+            hideZoomLens();
+        });
+    });
+}
 </script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 
@@ -1072,6 +1208,53 @@ blockquote {
     }
 }
 
+/* Video Zoom Lens Styling */
+.video-zoom-lens {
+    position: fixed;
+    z-index: 10000;
+    background: transparent;
+    border-radius: 12px;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8),
+                0 0 0 3px rgba(0, 0, 0, 0.2),
+                0 8px 32px rgba(0, 0, 0, 0.35);
+    padding: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    border: none;
+    overflow: hidden;
+}
+
+.video-zoom-lens.visible {
+    opacity: 1;
+}
+
+.video-zoom-lens canvas {
+    display: block;
+    border-radius: 12px;
+    width: 150;
+    height: 150;
+}
+
+.hover-instruction {
+    text-align: center;
+    margin: var(--space-sm) 0;
+    padding: var(--space-sm);
+    background: #f8f9fa;
+    border-radius: var(--space-sm);
+    color: #555;
+    font-size: var(--text-sm);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-xs);
+}
+
+.hover-instruction i {
+    color: #1a73e8;
+    font-size: var(--text-base);
+}
+
 /* Mobile-first responsive adjustments */
 @media only screen and (max-width: 38.75rem) {
     :root {
@@ -1307,6 +1490,10 @@ blockquote {
         <h2>Results</h2>
         <hr>
         <h3>Motion Enhanced Video Generation with Wan2.2-A14B T2V</h3>
+        <div class="hover-instruction">
+            <i class="fas fa-search-plus"></i>
+            <span>Hover over each video to zoom in</span>
+        </div>
         <p>Wan2.2-A14B already generates human motion reasonably well, but our method can substantially further improve it.</p>
         <!-- Motion Comparison Carousel: 1 carousel with 2 pages, each page has 4x3 grid (4 methods x 3 samples) -->
         <div class="video-carousel" data-carousel="motion">
