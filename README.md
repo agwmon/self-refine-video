@@ -1,7 +1,7 @@
 # Self-Refining Video Sampling
 Official Pytorch Implementation of Self-Refining Video Sampling
 
-**[Preprint 2026]**-**[Self-Refining Video Sampling](https://github.com/agwmon/self-refine-video)**
+**[ICML 2026]**-**[Self-Refining Video Sampling](https://github.com/agwmon/self-refine-video)**
 <br/>
 [Sangwon Jang<sup>*</sup>](https://agwmon.github.io/), [Taekyung Ki<sup>*</sup>](https://taekyungki.github.io), [Jaehyeong Jo<sup>*</sup>](https://harryjo97.github.io/), [Saining Xie](https://www.sainingxie.com/), [Jaehong Yoon<sup>†</sup>](https://jaehong31.github.io/), [Sung Ju hwang<sup>†</sup>](http://www.sungjuhwang.com/)
 <br/>(* indicates equal contribution, † indicates equal advising)
